@@ -139,3 +139,12 @@ h1, h2, h3, h4, .serif { font-family: var(--jw-serif); font-weight: 400; letter-
 @media (prefers-reduced-motion: reduce) { .fade-in { animation: none; } }
 .map-callout { font-family: 'Gaegu', 'Pretendard', cursive; font-size: 30px; font-weight: 700; fill: #5d6a72; paint-order: stroke; stroke: #f6f1e6; stroke-width: 6px; stroke-linejoin: round; }
 .map-callout .num { fill: #2b8fd9; }
+
+/* 코스 마스코트 */
+.mascot { display: block; flex: none; overflow: visible; }
+.olle-top { display: flex; justify-content: space-between; align-items: flex-start; gap: .5rem; margin-bottom: .4rem; }
+.olle-top .olle-num { margin-bottom: 0; }
+.olle-top .mascot { margin: -6px -4px 0 0; transition: transform .35s; }
+.olle-card:hover .mascot { transform: translateY(-3px) rotate(-3deg); }
+.map-panel .mascot { margin-bottom: .4rem; }
+.page-head .mascot { margin-bottom: -.6rem; }

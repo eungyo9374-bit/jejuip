@@ -5,7 +5,8 @@ import PageHeader from '../components/PageHeader'
 import { ErrorAlert, Loading } from '../components/Status'
 import { fetchOlle } from '../api/client'
 import MAP from '../data/jeju-map.json'
-import { ArtDefs, LandArt, Landmarks, SeaArt } from '../components/JejuArt'
+import { LandArt, Landmarks, SeaArt } from '../components/JejuArt'
+import Mascot from '../components/Mascot'
 import { useAppStore } from '../store/useAppStore'
 
 // ── 지도 좌표계 ───────────────────────────────────────────
@@ -107,7 +108,6 @@ export default function OlleMap() {
           <Col lg={9}>
             <div className="olle-svg-wrap">
               <svg className="olle-svg" viewBox={`${vb.x} ${vb.y} ${vb.w} ${vb.h}`} role="img" aria-label="제주 올레길 코스 지도">
-                <ArtDefs />
                 <rect x="-3000" y="-3000" width="7000" height="7000" fill="transparent" onClick={reset} />
                 <SeaArt mainPoly={mainPoly} rings={MAP.rings} pathD={pathD} moving={moving} />
                 <LandArt rings={MAP.rings} mainPoly={mainPoly} pr={pr} pathD={pathD} moving={moving} />
@@ -202,6 +202,7 @@ export default function OlleMap() {
 function Panel({ g, onSave, onClose }) {
   return (
     <article className="map-panel">
+      <Mascot course={g.c.course} size={110} />
       <div className="eyebrow">{g.c.area}</div>
       <h3 className="serif" style={{ fontSize: '1.6rem' }}>{g.c.course} · {g.c.name.replace(/\([AB]\)/, '')}</h3>
       {g.route.type === 'line' && <p className="small text-muted">내륙을 지나는 코스라 출발·도착 두 지점을 점선으로 이었어요.</p>}

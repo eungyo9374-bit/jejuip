@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet } from 'react-router-dom'
 import { Container, Toast, ToastContainer } from 'react-bootstrap'
 import { NAV_ITEMS } from '../router'
 import { useAppStore } from '../store/useAppStore'
+import { ArtDefs } from '../components/JejuArt'
 
 export default function RootLayout() {
   const toasts = useAppStore((s) => s.toasts)
@@ -14,6 +15,8 @@ export default function RootLayout() {
 
   return (
     <div className="d-flex flex-column min-vh-100">
+      {/* 지도·마스코트 그림 정의 (화면에는 보이지 않음) */}
+      <svg width="0" height="0" style={{ position: 'absolute' }} aria-hidden="true" focusable="false"><ArtDefs /></svg>
       <header className="site-header">
         <div className="header-inner">
           <button className="menu-btn d-lg-none" aria-label="메뉴" onClick={() => setOpen(!open)}>

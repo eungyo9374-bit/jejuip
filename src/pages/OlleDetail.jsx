@@ -3,6 +3,7 @@ import { Col, Row } from 'react-bootstrap'
 import { Link, useParams } from 'react-router-dom'
 import PageHeader from '../components/PageHeader'
 import ItemCard from '../components/ItemCard'
+import Mascot from '../components/Mascot'
 import { Empty, ErrorAlert, Loading } from '../components/Status'
 import { fetchHeritageNear, fetchNearby, fetchOlle, fetchWeather } from '../api/client'
 import { useAppStore } from '../store/useAppStore'
@@ -43,7 +44,7 @@ export default function OlleDetail() {
 
   return (
     <>
-      <PageHeader title={`${course.course} · ${course.name}`} subtitle={`${course.area} — ${route}`} />
+      <PageHeader title={`${course.course} · ${course.name}`} subtitle={`${course.area} — ${route}`} aside={<Mascot course={course.course} size={120} />} />
 
       <Row className="g-4 mb-5">
         <Col md={5}>

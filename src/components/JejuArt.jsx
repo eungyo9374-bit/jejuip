@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { MASCOT_ICONS } from '../data/mascotIcons'
 
 // 올레 지도의 일러스트 — 펜으로 윤곽을 긋고 수채물감을 살짝 엇나가게 칠한 손그림 스케치 느낌입니다.
 // 모든 그림은 (0,0)이 바닥 중앙이고, 위쪽(−y)으로 그려져 있어요. 위치는 [경도, 위도] 로 지정합니다.
@@ -126,7 +127,7 @@ export function ArtDefs() {
       <radialGradient id="a-wash" cx="0.5" cy="0.5" r="0.65">
         <stop offset="0" stopColor="#eef3dc" /><stop offset="1" stopColor="#d5e3b8" />
       </radialGradient>
-      {Object.entries(ICONS).map(([id, ic]) => (
+      {Object.entries({ ...ICONS, ...MASCOT_ICONS }).map(([id, ic]) => (
         <g id={id} key={id}>
           <g transform="translate(1.8 1.4)" stroke="none">
             {ic.w.map(([d, c], n) => <path key={n} d={d} fill={c} fillOpacity=".88" />)}

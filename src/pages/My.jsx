@@ -13,7 +13,7 @@ export default function My() {
 
   return (
     <>
-      <PageHeader icon="star" title="내 즐겨찾기" subtitle="Supabase favorites 테이블 — 안내서 STEP 5" />
+      <PageHeader icon="star" title="내 탐험 수첩" subtitle="가고 싶은 오름·길을 저장해 두세요" />
       <Form.Control className="mb-4" style={{ maxWidth: 320 }} placeholder="닉네임"
         value={nickname} onChange={(e) => setNickname(e.target.value)} />
       {favLoading ? <Loading /> : favorites.length === 0 ? <Empty text="아직 저장한 항목이 없어요" /> : (

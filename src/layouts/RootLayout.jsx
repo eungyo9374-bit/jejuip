@@ -11,9 +11,9 @@ export default function RootLayout() {
     <div className="d-flex flex-column min-vh-100">
       <Navbar expand="md" bg="primary" data-bs-theme="dark" collapseOnSelect sticky="top">
         <Container>
-          {/* TODO: 자신의 서비스 이름으로 바꾸세요 */}
+          
           <Navbar.Brand as={NavLink} to="/">
-            <i className="bi bi-flower1 me-2" />제주 IP 프로젝트
+            <i className="bi bi-signpost-split me-2" />제주를 걷다
           </Navbar.Brand>
           <Navbar.Toggle aria-controls="main-nav" />
           <Navbar.Collapse id="main-nav">

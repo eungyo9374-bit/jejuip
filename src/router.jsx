@@ -13,10 +13,10 @@ import NotFound from './pages/NotFound'
 // ※ Places/Heritage 는 샘플 이름입니다. 자신의 주제에 맞게 바꾸세요.
 export const NAV_ITEMS = [
   { to: '/', label: '홈', icon: 'house' },
-  { to: '/places', label: '관광·문화', icon: 'geo-alt' },
-  { to: '/heritage', label: '국가유산', icon: 'bank' },
-  { to: '/agent', label: 'AI 가이드', icon: 'robot' },
-  { to: '/my', label: '내 즐겨찾기', icon: 'star' },
+  { to: '/places', label: '오름·걷기길', icon: 'geo-alt' },
+  { to: '/heritage', label: '한라산·바다 자연유산', icon: 'tree' },
+  { to: '/agent', label: '걷기 도우미', icon: 'robot' },
+  { to: '/my', label: '내 탐험 수첩', icon: 'journal-bookmark' },
 ]
 
 export const router = createBrowserRouter([

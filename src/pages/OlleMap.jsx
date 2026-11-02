@@ -5,6 +5,7 @@ import PageHeader from '../components/PageHeader'
 import { ErrorAlert, Loading } from '../components/Status'
 import { fetchOlle } from '../api/client'
 import MAP from '../data/jeju-map.json'
+import { ArtDefs, LandArt, Landmarks, SeaArt } from '../components/JejuArt'
 import { useAppStore } from '../store/useAppStore'
 
 // ── 지도 좌표계 ───────────────────────────────────────────
@@ -34,8 +35,8 @@ function midpoint(pts) {
 }
 
 const LABELS = [
-  ['제주시', 126.53, 33.47], ['서귀포시', 126.56, 33.28], ['조천', 126.65, 33.47], ['구좌', 126.8, 33.46], ['성산', 126.88, 33.4],
-  ['표선', 126.77, 33.33], ['남원', 126.7, 33.3], ['중문', 126.42, 33.29], ['대정', 126.26, 33.26], ['한림', 126.3, 33.37], ['애월', 126.38, 33.44],
+  ['제주시', 126.55, 33.455], ['서귀포시', 126.56, 33.28], ['조천', 126.65, 33.47], ['구좌', 126.8, 33.46], ['성산', 126.88, 33.4],
+  ['표선', 126.77, 33.33], ['남원', 126.7, 33.3], ['중문', 126.42, 33.29], ['대정', 126.225, 33.285], ['한림', 126.3, 33.37], ['애월', 126.38, 33.44],
 ]
 const ISLANDS = [['우도', 126.985, 33.47], ['가파도', 126.3, 33.145], ['마라도', 126.31, 33.085], ['추자도', 126.31, 33.905]]
 
@@ -92,7 +93,7 @@ export default function OlleMap() {
 
   const k = vb.w / W                      // 확대할수록 배지·글자는 작게 그려서 화면 크기를 유지
   const sel = groups.find((g) => g.key === selected)
-  const hallasan = pr([126.53, 33.365])
+  const mainPoly = useMemo(() => MAP.rings.find((r) => r.main).pts.map(pr), [])
 
   return (
     <>
@@ -103,24 +104,11 @@ export default function OlleMap() {
           <Col lg={9}>
             <div className="olle-svg-wrap">
               <svg className="olle-svg" viewBox={`${vb.x} ${vb.y} ${vb.w} ${vb.h}`} role="img" aria-label="제주 올레길 코스 지도">
-                <defs>
-                  <pattern id="sea" width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-                    <rect width="14" height="14" fill="#d6ebf7" /><rect width="5" height="14" fill="#cbe5f4" />
-                  </pattern>
-                </defs>
-                <rect x="-3000" y="-3000" width="7000" height="7000" fill="url(#sea)" onClick={reset} />
-
-                {/* 섬: 그림자 → 바다 테두리 → 땅 */}
-                {MAP.rings.map((r, i) => <path key={`s${i}`} d={pathD(r.pts, true)} transform="translate(9 11)" fill="#a9cfe3" />)}
-                {MAP.rings.map((r, i) => <path key={`o${i}`} d={pathD(r.pts, true)} fill="#fffdf6" stroke="#8cc7e8" strokeWidth="6" strokeLinejoin="round" />)}
-                {MAP.rings.map((r, i) => <path key={`l${i}`} d={pathD(r.pts, true)} fill="none" stroke="#fff" strokeWidth="2" strokeLinejoin="round" />)}
-
-                {/* 한라산 그림 */}
-                <g transform={`translate(${hallasan[0]} ${hallasan[1]}) scale(${Math.max(k, 0.5)})`} style={{ pointerEvents: 'none' }}>
-                  <path d="M-92 36 L-38 -22 L-12 6 L26 -52 L58 -8 L74 -22 L112 36 Z" fill="#d4e6d2" stroke="#6f9a7e" strokeWidth="3" strokeLinejoin="round" />
-                  <path d="M12 -26 L26 -52 L40 -30 L30 -34 L22 -26 Z" fill="#fff" stroke="#6f9a7e" strokeWidth="2" strokeLinejoin="round" />
-                  <text y="62" textAnchor="middle" className="map-label strong">한라산</text>
-                </g>
+                <ArtDefs />
+                <rect x="-3000" y="-3000" width="7000" height="7000" fill="transparent" onClick={reset} />
+                <SeaArt mainPoly={mainPoly} pr={pr} rings={MAP.rings} pathD={pathD} />
+                <LandArt rings={MAP.rings} mainPoly={mainPoly} pr={pr} pathD={pathD} />
+                <Landmarks pr={pr} k={k} />
 
                 {/* 지역 이름 */}
                 {LABELS.map(([t, lng, lat]) => { const [x, y] = pr([lng, lat]); return <text key={t} x={x} y={y} textAnchor="middle" className="map-label" style={{ fontSize: 25 * Math.max(k, 0.55), opacity: selected ? 0.55 : 1 }}>{t}</text> })}
@@ -133,7 +121,7 @@ export default function OlleMap() {
                   return (
                     <g key={g.key} opacity={dim ? 0.28 : 1} onMouseEnter={() => setHover(g.key)} onMouseLeave={() => setHover(null)} onClick={() => select(g.key)} style={{ cursor: 'pointer' }}>
                       <path d={d} fill="none" stroke="#fff" strokeWidth={on ? 15 : 12} strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
-                      <path d={d} fill="none" stroke={on ? '#ff6a13' : hover === g.key ? '#006fe0' : '#1a8cff'} strokeWidth={on ? 8 : 6} strokeLinecap="round" strokeLinejoin="round"
+                      <path d={d} fill="none" stroke={on ? '#ff4a00' : hover === g.key ? '#0b3fb8' : '#1d5be0'} strokeWidth={on ? 8 : 6} strokeLinecap="round" strokeLinejoin="round"
                         strokeDasharray={g.route.type === 'line' ? '2 9' : undefined} vectorEffect="non-scaling-stroke" />
                       <path d={d} fill="none" stroke="transparent" strokeWidth="22" vectorEffect="non-scaling-stroke" />
                     </g>
@@ -159,8 +147,8 @@ export default function OlleMap() {
                       onClick={() => select(g.key)} onKeyDown={(e) => e.key === 'Enter' && select(g.key)}
                       onMouseEnter={() => setHover(g.key)} onMouseLeave={() => setHover(null)} style={{ cursor: 'pointer' }}>
                       <title>{`${g.c.course} ${g.c.name.replace(/\([AB]\)/, '')} · ${g.c.distance}`}</title>
-                      <circle r={on ? 29 : 23} fill={on ? '#ff6a13' : '#fff'} stroke={on ? '#fff' : '#1a8cff'} strokeWidth="5" />
-                      <text y="7" textAnchor="middle" className="map-badge-text" fill={on ? '#fff' : '#12304a'} style={{ fontSize: g.key.length > 2 ? 15 : 22 }}>{g.key}</text>
+                      <circle r={on ? 29 : 23} fill={on ? '#ff4a00' : '#fff'} stroke={on ? '#fff' : '#1d5be0'} strokeWidth="5" />
+                      <text y="7" textAnchor="middle" className="map-badge-text" fill={on ? '#fff' : '#0e2a5c'} style={{ fontSize: g.key.length > 2 ? 15 : 22 }}>{g.key}</text>
                     </g>
                   )
                 })}

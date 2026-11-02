@@ -112,10 +112,10 @@ h1, h2, h3, h4, .serif { font-family: var(--jw-serif); font-weight: 400; letter-
 .heritage-row { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 1rem 0; border-bottom: 1px solid var(--jw-line); }
 
 /* 올레 지도 (일러스트풍 SVG) */
-.olle-svg-wrap { position: relative; background: #d6ebf7; border: 1px solid var(--jw-line); overflow: hidden; }
+.olle-svg-wrap { position: relative; background: #7cc6ee; border: 1px solid var(--jw-line); overflow: hidden; }
 .olle-svg { display: block; width: 100%; height: auto; aspect-ratio: 1110 / 860; user-select: none; }
-.map-label { font-family: var(--jw-serif); fill: #6b8da3; letter-spacing: .08em; pointer-events: none; font-size: 25px; }
-.map-label.strong { fill: #4d7a5e; font-size: 28px; font-weight: 500; }
+.map-label { font-family: 'Pretendard', sans-serif; font-weight: 700; fill: #2a5a1c; letter-spacing: .02em; pointer-events: none; font-size: 25px; paint-order: stroke; stroke: #fff; stroke-width: 6px; stroke-linejoin: round; }
+.map-label.strong { fill: #1f4a14; font-size: 26px; }
 .map-badge-text { font-family: 'Pretendard', sans-serif; font-weight: 700; pointer-events: none; }
 .map-badge:focus { outline: none; }
 .map-badge:focus circle { stroke: #ff6a13; }

@@ -1,20 +1,25 @@
 import { Link } from 'react-router-dom'
 import Mascot from './Mascot'
+import { routeText } from '../lib/olle'
 
-// 올레 코스 한 칸 — 큰 코스 번호 + 이름 + 시종점 + 거리·시간
-export default function OlleCard({ c, onSave }) {
+// 올레 코스 한 칸 — 큰 코스 번호 + 마스코트 + 이름 + 시종점 + 거리·시간
+// g: lib/olle.js 의 groupCourses() 가 만든 코스 묶음 (A/B 갈래는 한 카드에 같이 보여줘요)
+export default function OlleCard({ g, onSave }) {
+  const v = g.variants[0]
   return (
     <article className="olle-card fade-in h-100 d-flex flex-column">
-      <Link to={`/olle/${c.id}`} className="olle-card-link">
+      <Link to={`/olle/${g.key}`} className="olle-card-link">
         <div className="olle-top">
-          <div className="olle-num serif">{c.course.replace('코스', '')}<small>코스</small></div>
-          <Mascot course={c.course} size={92} />
+          <div className="olle-num serif">{g.key}<small>코스</small></div>
+          <Mascot course={g.course} size={92} />
         </div>
-        <div className="eyebrow">{c.area}</div>
-        <h3 className="item-title">{c.name}</h3>
-        <p className="item-sub">{c.start}{c.end && c.end !== c.start ? ` → ${c.end}` : ''}</p>
+        <div className="eyebrow">{g.area}</div>
+        <h3 className="item-title">{g.name}</h3>
+        <p className="item-sub">{routeText(g)}</p>
         <div className="olle-tags">
-          <span>{c.distance}</span><span>{c.duration}</span><span>{c.level}</span>
+          {g.multi
+            ? g.variants.map((x) => <span key={x.id}>{x.label}코스 {x.distance} · {x.duration} · {x.level}</span>)
+            : <><span>{v.distance}</span><span>{v.duration}</span><span>{v.level}</span></>}
         </div>
       </Link>
       {onSave && (

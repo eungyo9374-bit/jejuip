@@ -6,9 +6,11 @@ import ItemCard from '../components/ItemCard'
 import Mascot from '../components/Mascot'
 import { Empty, ErrorAlert, Loading } from '../components/Status'
 import { fetchHeritageNear, fetchNearby, fetchOlle, fetchWeather } from '../api/client'
+import { groupCourses, keyFromId, routeText } from '../lib/olle'
 import { useAppStore } from '../store/useAppStore'
 
-// 올레 코스 상세 — 코스 정보(올레코스현황) + 날씨(기상청) + 시종점 주변 명소(TourAPI)
+// 올레 코스 상세 — 코스 정보(올레코스현황) + 날씨(기상청) + 주변 명소(TourAPI) + 주변 문화유산(국가유산청)
+// 3코스(A)/(B)처럼 갈래가 있으면 한 페이지에 같이 보여줘요 (/olle/3, /olle/3a 모두 같은 페이지)
 export default function OlleDetail() {
   const { id } = useParams()
   const addFavorite = useAppStore((s) => s.addFavorite)
@@ -22,10 +24,10 @@ export default function OlleDetail() {
   useEffect(() => {
     setLoading(true); setError('')
     fetchOlle().then(async (list) => {
-      const c = list.find((x) => x.id === id)
+      const c = groupCourses(list).find((x) => x.key === keyFromId(id))
       setCourse(c ?? null)
       if (!c) return
-      // 날씨와 주변 명소는 코스를 찾은 뒤 동시에 불러옵니다 (하나가 실패해도 나머지는 보여줌)
+      // 날씨·주변 명소·문화유산은 코스를 찾은 뒤 동시에 불러옵니다 (하나가 실패해도 나머지는 보여줌)
       const [w, n, h] = await Promise.allSettled([fetchWeather(c.weatherPlace), fetchNearby(c.lat, c.lng), fetchHeritageNear(c.lat, c.lng)])
       setWeather(w.status === 'fulfilled' ? w.value : [])
       setSpots(n.status === 'fulfilled' ? n.value : [])
@@ -39,22 +41,27 @@ export default function OlleDetail() {
 
   const now = weather[0]
   const walkable = now && now.rain === '없음' && now.pop < 40
-  const route = `${course.start}${course.end && course.end !== course.start ? ` → ${course.end}` : ''}`
+  const save = () => addFavorite({ source: 'olle', id: course.key, title: `${course.course} ${course.name}` })
   const question = `${course.course} ${course.name} 코스를 걸으려는데 오늘 날씨랑 주변에서 볼 만한 곳 알려줘`
 
   return (
     <>
-      <PageHeader title={`${course.course} · ${course.name}`} subtitle={`${course.area} — ${route}`} aside={<Mascot course={course.course} size={120} />} />
+      <PageHeader title={`${course.course} · ${course.name}`} subtitle={`${course.area} — ${routeText(course)}`} aside={<Mascot course={course.course} size={120} />} />
 
       <Row className="g-4 mb-5">
         <Col md={5}>
-          <div className="stat-grid">
-            <div><div className="eyebrow">거리</div><div className="serif stat">{course.distance}</div></div>
-            <div><div className="eyebrow">소요시간</div><div className="serif stat">{course.duration}</div></div>
-            <div><div className="eyebrow">난이도(거리 기준)</div><div className="serif stat">{course.level}</div></div>
-          </div>
+          {course.variants.map((v) => (
+            <div key={v.id} className="mb-3">
+              {course.multi && <div className="eyebrow">{v.label}코스</div>}
+              <div className="stat-grid">
+                <div><div className="eyebrow">거리</div><div className="serif stat">{v.distance}</div></div>
+                <div><div className="eyebrow">소요시간</div><div className="serif stat">{v.duration}</div></div>
+                <div><div className="eyebrow">난이도(거리 기준)</div><div className="serif stat">{v.level}</div></div>
+              </div>
+            </div>
+          ))}
           <div className="d-flex flex-wrap gap-3 mt-4">
-            <button className="link-underline" onClick={() => addFavorite({ source: 'olle', id: course.id, title: `${course.course} ${course.name}` })}>올레 수첩에 담기</button>
+            <button className="link-underline" onClick={save}>올레 수첩에 담기</button>
             <Link to={`/agent?q=${encodeURIComponent(question)}`} className="link-underline">걷기 도우미에게 묻기</Link>
           </div>
         </Col>
@@ -87,6 +94,7 @@ export default function OlleDetail() {
           ))}
         </Row>
       )}
+
       <h3 className="serif mt-5 mb-1" style={{ fontSize: '1.4rem' }}>코스 주변 문화유산</h3>
       <p className="small text-muted mb-3">국가유산청 자료에서 권역 중심 반경 약 8km 안의 문화유산을 가까운 순으로 보여드려요.</p>
       {heritage.length === 0 ? <Empty text="주변 문화유산이 없어요" /> : (

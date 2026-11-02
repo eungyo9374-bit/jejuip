@@ -4,12 +4,13 @@ import PageHeader from '../components/PageHeader'
 import OlleCard from '../components/OlleCard'
 import { Empty, ErrorAlert, Loading } from '../components/Status'
 import { fetchOlle } from '../api/client'
+import { groupCourses, levelsOf } from '../lib/olle'
 import { useAppStore } from '../store/useAppStore'
 
 const LEVELS = ['전체', '가볍게', '보통', '도전']
 const REGIONS = ['전체', '동부', '남부', '남서부', '서부', '북서부', '북부', '북동부', '섬']
 
-// 올레 코스 목록 — 제주특별자치도_올레코스현황 API
+// 올레 코스 목록 — 제주특별자치도_올레코스현황 API (A/B 갈래는 한 카드로 합쳐서 보여줘요)
 export default function Olle() {
   const addFavorite = useAppStore((s) => s.addFavorite)
   const [courses, setCourses] = useState([])
@@ -23,10 +24,11 @@ export default function Olle() {
     fetchOlle().then(setCourses).catch((e) => setError(e.message)).finally(() => setLoading(false))
   }, [])
 
-  const shown = useMemo(() => courses.filter((c) =>
-    (level === '전체' || c.level === level) &&
-    (region === '전체' || c.area.startsWith(region)) &&
-    (!q || `${c.course} ${c.name} ${c.start} ${c.end}`.includes(q.trim()))), [courses, level, region, q])
+  const groups = useMemo(() => groupCourses(courses), [courses])
+  const shown = useMemo(() => groups.filter((g) =>
+    (level === '전체' || levelsOf(g).includes(level)) &&
+    (region === '전체' || g.area.startsWith(region)) &&
+    (!q || `${g.course} ${g.name} ${g.start} ${g.end}`.includes(q.trim()))), [groups, level, region, q])
 
   return (
     <>
@@ -41,9 +43,9 @@ export default function Olle() {
         <>
           <p className="small text-muted">{shown.length}개 코스</p>
           <Row xs={1} sm={2} lg={3} xl={4} className="g-4">
-            {shown.map((c) => (
-              <Col key={c.id}>
-                <OlleCard c={c} onSave={() => addFavorite({ source: 'olle', id: c.id, title: `${c.course} ${c.name}` })} />
+            {shown.map((g) => (
+              <Col key={g.key}>
+                <OlleCard g={g} onSave={() => addFavorite({ source: 'olle', id: g.key, title: `${g.course} ${g.name}` })} />
               </Col>
             ))}
           </Row>

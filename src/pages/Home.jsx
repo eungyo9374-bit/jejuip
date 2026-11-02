@@ -10,13 +10,13 @@ import NatureCard from '../components/NatureCard'
 import OlleCard from '../components/OlleCard'
 import { SCENES } from '../data/scenes'
 import { COURSE_PHOTOS } from '../data/olle-photos'
+import { distanceText, durationText, groupCourses, keyFromId, routeText } from '../lib/olle'
 
 // 홈 = 에디토리얼 소개 + 맨 아래 "동작 체크" 대시보드
 // STEP 0~1 에서 아래 점검이 모두 초록색이 되어야 다음 단계로 넘어갑니다.
 const FIRST = ['1', '7', '10']      // 처음 보여줄 대표 코스 (이후 30초마다 다른 코스로 바뀜)
 const ROTATE_MS = 30000
 
-const keyOf = (c) => c.course.replace('코스', '')
 // 목록에서 n개를 골라요. tick 이 올라갈 때마다 다음 n개로 넘어가고, 끝나면 처음으로 돌아갑니다
 const pick = (list, n, tick) => list.length ? Array.from({ length: Math.min(n, list.length) }, (_, i) => list[(tick * n + i) % list.length]) : []
 
@@ -56,25 +56,21 @@ export default function Home() {
     fetchPlaces('하도', '12').then((list) => setHero(list.find((p) => p.image)?.image ?? '')).catch(() => {})
   }, [])
 
-  // 같은 번호의 갈래(3코스 A/B 등)는 하나로 묶고, 처음 보여줄 코스가 맨 앞에 오도록 정렬
-  const groups = useMemo(() => {
-    const m = new Map()
-    all.forEach((c) => { const k = keyOf(c); if (!m.has(k)) m.set(k, c) })
-    return [...m.entries()].map(([key, c]) => ({ key, c }))
-      .sort((a, b) => (FIRST.includes(a.key) ? FIRST.indexOf(a.key) : 99) - (FIRST.includes(b.key) ? FIRST.indexOf(b.key) : 99))
-  }, [all])
-  const featured = pick(groups, 3, tick).map((g) => g.c)
+  // 같은 번호의 갈래(3코스 A/B 등)는 한 코스로 묶고, 처음 보여줄 코스가 맨 앞에 오도록 정렬
+  const groups = useMemo(() => groupCourses(all)
+    .sort((x, y) => (FIRST.includes(x.key) ? FIRST.indexOf(x.key) : 99) - (FIRST.includes(y.key) ? FIRST.indexOf(y.key) : 99)), [all])
+  const featured = pick(groups, 3, tick)
 
   // 갤러리: 직접 설명을 쓴 풍경 7장 + 나머지 코스의 대표 사진(코스 정보로 설명을 자동 생성)
   const pool = useMemo(() => {
     const curated = Object.values(SCENES)
-    const have = new Set(curated.map((x) => x.to.replace('/olle/', '').replace(/[ab]$/, '')))
-    const extra = groups.filter((g) => COURSE_PHOTOS[g.key] && !have.has(g.key)).map(({ key, c }) => ({
-      to: `/olle/${c.id}`,
-      kind: `${c.course} · ${c.name.replace(/\([AB]\)/, '')}`,
-      name: COURSE_PHOTOS[key].spot,
-      desc: `${c.course}(${c.start}${c.end && c.end !== c.start ? ` → ${c.end}` : ''}) 가까이에 있는 명소예요. 코스 거리 ${c.distance}, 걷는 데 ${c.duration} 걸려요.`,
-      image: COURSE_PHOTOS[key].image,
+    const have = new Set(curated.map((x) => keyFromId(x.to.replace('/olle/', ''))))
+    const extra = groups.filter((cg) => COURSE_PHOTOS[cg.key] && !have.has(cg.key)).map((cg) => ({
+      to: `/olle/${cg.key}`,
+      kind: `${cg.course} · ${cg.name}`,
+      name: COURSE_PHOTOS[cg.key].spot,
+      desc: `${cg.course}(${routeText(cg)}) 가까이에 있는 명소예요. 코스 거리 ${distanceText(cg)}, 걷는 데 ${durationText(cg)} 걸려요.`,
+      image: COURSE_PHOTOS[cg.key].image,
     }))
     return [...curated, ...extra]
   }, [groups])
@@ -118,7 +114,7 @@ export default function Home() {
             <Row xs={1} md={3} className="g-4">
               {featured.map((c) => (
                 <Col key={c.id}>
-                  <OlleCard c={c} onSave={() => addFavorite({ source: 'olle', id: c.id, title: `${c.course} ${c.name}` })} />
+                  <OlleCard g={c} onSave={() => addFavorite({ source: 'olle', id: c.key, title: `${c.course} ${c.name}` })} />
                 </Col>
               ))}
             </Row>

@@ -206,17 +206,16 @@ function Panel({ g, onSave, onClose }) {
       <div className="eyebrow">{g.c.area}</div>
       <h3 className="serif" style={{ fontSize: '1.6rem' }}>{g.c.course} · {g.c.name.replace(/\([AB]\)/, '')}</h3>
       {g.route.type === 'line' && <p className="small text-muted">내륙을 지나는 코스라 출발·도착 두 지점을 점선으로 이었어요.</p>}
-      {g.list.map((c) => (
-        <div key={c.id} className="mb-3">
-          {g.list.length > 1 && <div className="small fw-bold">{c.name}</div>}
-          <div className="small text-muted">{c.start}{c.end && c.end !== c.start ? ` → ${c.end}` : ''}</div>
-          <div className="olle-tags mt-2"><span>{c.distance}</span><span>{c.duration}</span><span>{c.level}</span></div>
-          <div className="d-flex gap-3 mt-2">
-            <Link to={`/olle/${c.id}`} className="link-underline">상세 보기</Link>
-            <button type="button" className="link-underline" onClick={() => onSave({ source: 'olle', id: c.id, title: `${c.course} ${c.name}` })}>올레 수첩에 담기</button>
-          </div>
-        </div>
-      ))}
+      <div className="small text-muted">{g.c.start}{g.c.end && g.c.end !== g.c.start ? ` → ${g.c.end}` : ''}</div>
+      <div className="olle-tags mt-2 mb-2">
+        {g.list.length > 1
+          ? g.list.map((c) => <span key={c.id}>{/\(([AB])\)/.exec(c.name)?.[1]}코스 {c.distance} · {c.duration} · {c.level}</span>)
+          : <><span>{g.c.distance}</span><span>{g.c.duration}</span><span>{g.c.level}</span></>}
+      </div>
+      <div className="d-flex gap-3 mb-3">
+        <Link to={`/olle/${g.key}`} className="link-underline">상세 보기</Link>
+        <button type="button" className="link-underline" onClick={() => onSave({ source: 'olle', id: g.key, title: `${g.c.course} ${g.c.name.replace(/\([AB]\)/, '')}` })}>올레 수첩에 담기</button>
+      </div>
       <button type="button" className="link-underline small" onClick={onClose}>선택 해제 · 전체 보기</button>
     </article>
   )

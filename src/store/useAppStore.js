@@ -37,11 +37,26 @@ export const useAppStore = create(
       },
       addFavorite: async ({ source, id, title }) => {
         if (!supabase) return get().toast('Supabase 설정(.env.local)이 필요해요', 'warning')
-        const row = { nickname: get().nickname || '익명', source, item_id: String(id), title }
+        const nickname = get().nickname || '익명'
+        const row = { nickname, source, item_id: String(id), title }
+        // 같은 항목을 두 번 담지 않도록 먼저 확인해요
+        const { data: dup } = await supabase.from('favorites').select('id')
+          .eq('nickname', nickname).eq('source', source).eq('item_id', row.item_id).limit(1)
+        if (dup?.length) return get().toast('이미 올레 수첩에 담겨 있어요', 'warning')
         const { data, error } = await supabase.from('favorites').insert(row).select().single()
         if (error) return get().toast(error.message, 'danger')
         set({ favorites: [data, ...get().favorites] })
-        get().toast('즐겨찾기에 저장했어요')
+        get().toast('올레 수첩에 담았어요')
+      },
+      // 수첩에서 빼기 — Supabase 에서 지우고 화면 목록에서도 바로 뺍니다
+      removeFavorite: async (id) => {
+        if (!supabase) return get().toast('Supabase 설정(.env.local)이 필요해요', 'warning')
+        const { data, error } = await supabase.from('favorites').delete().eq('id', id).select()
+        if (error) return get().toast(error.message, 'danger')
+        // 삭제 권한(RLS 정책)이 없으면 오류 없이 0건이 지워져요 → 안내
+        if (!data?.length) return get().toast('삭제되지 않았어요. Supabase 에 delete 정책을 추가해야 해요 (README 참고)', 'danger')
+        set({ favorites: get().favorites.filter((f) => f.id !== id) })
+        get().toast('올레 수첩에서 뺐어요')
       },
 
       // ④ STEP 6: 에이전트 대화 — 페이지를 옮겨도 대화가 남도록 store 에 둡니다

@@ -6,6 +6,8 @@ import { isSupabaseReady, supabase } from '../lib/supabase'
 import { secure } from '../lib/img'
 import { useAppStore } from '../store/useAppStore'
 import WeatherBadge from '../components/WeatherBadge'
+import NatureCard from '../components/NatureCard'
+import { NATURE } from '../data/nature'
 
 // 홈 = 에디토리얼 소개 + 맨 아래 "동작 체크" 대시보드
 // STEP 0~1 에서 아래 점검이 모두 초록색이 되어야 다음 단계로 넘어갑니다.
@@ -75,6 +77,39 @@ export default function Home() {
           </Col>
         </Row>
       </section>
+
+      <section className="section-gap">
+        <Row className="g-4 g-lg-5">
+          <Col md={7}><NatureCard item={NATURE.halla} /></Col>
+          <Col md={5}><NatureCard item={NATURE.daepo} ratio="1 / 1.05" /></Col>
+        </Row>
+      </section>
+
+      <section className="section-gap">
+        <Row className="g-4">
+          <Col lg={4}>
+            <h3 className="serif" style={{ fontSize: '1.7rem' }}>오름에서 바다까지,<br />제주의 자연</h3>
+            <p className="text-muted small">걷다 보면 만나게 되는 풍경들을 이름과 함께 소개해요.</p>
+          </Col>
+          <Col lg={8}>
+            <Row xs={1} md={3} className="g-4">
+              <Col><NatureCard item={NATURE.gae} ratio="3 / 4" /></Col>
+              <Col><NatureCard item={NATURE.hamdeok} ratio="3 / 4" /></Col>
+              <Col><NatureCard item={NATURE.eongddo} ratio="3 / 4" /></Col>
+            </Row>
+          </Col>
+        </Row>
+      </section>
+
+      <div className="band">
+        <div>
+          <Row className="g-4 g-lg-5">
+            <Col md={7}><NatureCard item={NATURE.hyeongje} /></Col>
+            <Col md={5}><NatureCard item={NATURE.gaetgeori} ratio="1 / 1.05" /></Col>
+          </Row>
+          <div className="photo-credit">사진 · 한국관광공사 TourAPI</div>
+        </div>
+      </div>
 
       <section className="section-gap">
         <Row className="g-4">

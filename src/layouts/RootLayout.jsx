@@ -1,45 +1,54 @@
-import { NavLink, Outlet } from 'react-router-dom'
-import { Container, Nav, Navbar, Toast, ToastContainer } from 'react-bootstrap'
+import { useState } from 'react'
+import { Link, NavLink, Outlet } from 'react-router-dom'
+import { Container, Toast, ToastContainer } from 'react-bootstrap'
 import { NAV_ITEMS } from '../router'
 import { useAppStore } from '../store/useAppStore'
 
 export default function RootLayout() {
   const toasts = useAppStore((s) => s.toasts)
   const nickname = useAppStore((s) => s.nickname)
+  const [open, setOpen] = useState(false)   // 모바일 메뉴 펼침
+
+  // 왼쪽 메뉴는 홈·AI 도우미(오른쪽 버튼)를 뺀 나머지
+  const sideItems = NAV_ITEMS.filter((i) => i.to !== '/' && i.to !== '/agent')
 
   return (
     <div className="d-flex flex-column min-vh-100">
-      <Navbar expand="md" bg="primary" data-bs-theme="dark" collapseOnSelect sticky="top">
-        <Container>
-          
-          <Navbar.Brand as={NavLink} to="/">
-            <i className="bi bi-signpost-split me-2" />제주를 걷다
-          </Navbar.Brand>
-          <Navbar.Toggle aria-controls="main-nav" />
-          <Navbar.Collapse id="main-nav">
-            <Nav className="me-auto">
-              {NAV_ITEMS.map((item) => (
-                <Nav.Link key={item.to} as={NavLink} to={item.to} end={item.to === '/'} eventKey={item.to}>
-                  <i className={`bi bi-${item.icon} me-1`} />{item.label}
-                </Nav.Link>
-              ))}
-            </Nav>
-            {nickname && (
-              <Navbar.Text><i className="bi bi-person-circle me-1" />{nickname}</Navbar.Text>
-            )}
-          </Navbar.Collapse>
-        </Container>
-      </Navbar>
+      <header className="site-header">
+        <div className="header-inner">
+          <button className="menu-btn d-lg-none" aria-label="메뉴" onClick={() => setOpen(!open)}>
+            <i className={`bi bi-${open ? 'x-lg' : 'list'}`} />
+          </button>
+          <nav className="nav-left d-none d-lg-flex">
+            {sideItems.map((item) => (
+              <NavLink key={item.to} to={item.to}>{item.label}</NavLink>
+            ))}
+          </nav>
+          <Link to="/" className="brand">제주를 걷다</Link>
+          <div className="header-right">
+            {nickname && <span className="d-none d-md-inline"><i className="bi bi-person me-1" />{nickname}</span>}
+            <Link to="/agent" className="btn-dark-sq">걷기 도우미</Link>
+          </div>
+        </div>
+        {open && (
+          <nav className="mobile-nav d-lg-none" onClick={() => setOpen(false)}>
+            {NAV_ITEMS.map((item) => (
+              <NavLink key={item.to} to={item.to} end={item.to === '/'}>{item.label}</NavLink>
+            ))}
+          </nav>
+        )}
+      </header>
 
-      <main className="flex-grow-1 py-4">
-        <Container>
+      <main className="flex-grow-1 pb-4">
+        <Container className="px-4" style={{ maxWidth: 1240 }}>
           <Outlet />   {/* ← 여기에 주소에 맞는 페이지가 들어갑니다 */}
         </Container>
       </main>
 
-      <footer className="py-3 border-top bg-light">
-        <Container className="small text-muted">
-          제주대 청년도약 부트캠프 1기 · 데이터 출처: 공공데이터포털 외
+      <footer className="site-footer">
+        <Container className="px-4" style={{ maxWidth: 1240 }}>
+          <Link to="/" className="brand">제주를 걷다</Link>
+          제주대 청년도약 부트캠프 1기 · 데이터 출처: 한국관광공사 · 기상청 · 국가유산청(공공데이터포털)
         </Container>
       </footer>
 

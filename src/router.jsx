@@ -14,7 +14,7 @@ import NotFound from './pages/NotFound'
 export const NAV_ITEMS = [
   { to: '/', label: '홈', icon: 'house' },
   { to: '/places', label: '오름·걷기길', icon: 'geo-alt' },
-  { to: '/heritage', label: '한라산·바다 자연유산', icon: 'tree' },
+  { to: '/heritage', label: '한라산·바다', icon: 'tree' },
   { to: '/agent', label: '걷기 도우미', icon: 'robot' },
   { to: '/my', label: '내 탐험 수첩', icon: 'journal-bookmark' },
 ]

@@ -18,7 +18,7 @@ export default function Agent() {
 
   return (
     <>
-      <PageHeader icon="robot" title="걷기 도우미" subtitle="날씨와 자연 명소 데이터를 직접 조회해 걸을 곳을 골라 드려요" />
+      <PageHeader title="걷기 도우미" subtitle="날씨와 자연 명소 데이터를 직접 조회해 걸을 곳을 골라 드려요" />
       <Card className="chat-box mb-3">
         <Card.Body>
           {messages.length === 0 && <div className="text-muted">예) 내일 서귀포 날씨 보고 걷기 좋은 오름 추천해줘</div>}

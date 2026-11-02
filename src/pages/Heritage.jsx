@@ -24,7 +24,7 @@ export default function Heritage() {
 
   return (
     <>
-      <PageHeader icon="tree" title="한라산·바다 자연유산" subtitle="국가유산청 — 천연기념물·명승 검색" />
+      <PageHeader title="한라산·바다 자연유산" subtitle="국가유산청 — 천연기념물·명승 검색" />
       <Form onSubmit={search} className="mb-4">
         <InputGroup>
           <Form.Control value={keyword} onChange={(e) => setKeyword(e.target.value)} placeholder="예: 한라산, 용암동굴, 천지연" />

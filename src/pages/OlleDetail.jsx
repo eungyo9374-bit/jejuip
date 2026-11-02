@@ -4,7 +4,7 @@ import { Link, useParams } from 'react-router-dom'
 import PageHeader from '../components/PageHeader'
 import ItemCard from '../components/ItemCard'
 import { Empty, ErrorAlert, Loading } from '../components/Status'
-import { fetchNearby, fetchOlle, fetchWeather } from '../api/client'
+import { fetchHeritageNear, fetchNearby, fetchOlle, fetchWeather } from '../api/client'
 import { useAppStore } from '../store/useAppStore'
 
 // 올레 코스 상세 — 코스 정보(올레코스현황) + 날씨(기상청) + 시종점 주변 명소(TourAPI)
@@ -14,6 +14,7 @@ export default function OlleDetail() {
   const [course, setCourse] = useState(null)
   const [weather, setWeather] = useState([])
   const [spots, setSpots] = useState([])
+  const [heritage, setHeritage] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -24,9 +25,10 @@ export default function OlleDetail() {
       setCourse(c ?? null)
       if (!c) return
       // 날씨와 주변 명소는 코스를 찾은 뒤 동시에 불러옵니다 (하나가 실패해도 나머지는 보여줌)
-      const [w, n] = await Promise.allSettled([fetchWeather(c.weatherPlace), fetchNearby(c.lat, c.lng)])
+      const [w, n, h] = await Promise.allSettled([fetchWeather(c.weatherPlace), fetchNearby(c.lat, c.lng), fetchHeritageNear(c.lat, c.lng)])
       setWeather(w.status === 'fulfilled' ? w.value : [])
       setSpots(n.status === 'fulfilled' ? n.value : [])
+      setHeritage(h.status === 'fulfilled' ? h.value : [])
     }).catch((e) => setError(e.message)).finally(() => setLoading(false))
   }, [id])
 
@@ -83,6 +85,22 @@ export default function OlleDetail() {
             </Col>
           ))}
         </Row>
+      )}
+      <h3 className="serif mt-5 mb-1" style={{ fontSize: '1.4rem' }}>코스 주변 문화유산</h3>
+      <p className="small text-muted mb-3">국가유산청 자료에서 권역 중심 반경 약 8km 안의 문화유산을 가까운 순으로 보여드려요.</p>
+      {heritage.length === 0 ? <Empty text="주변 문화유산이 없어요" /> : (
+        <div className="heritage-list">
+          {heritage.map((h) => (
+            <div key={`${h.name}-${h.dist}`} className="heritage-row">
+              <div>
+                <div className="eyebrow mb-1">{h.kind}</div>
+                <div className="item-title serif">{h.name}</div>
+                <div className="item-sub mb-0">{h.city} · 약 {(h.dist / 1000).toFixed(1)}km</div>
+              </div>
+              <button type="button" className="link-underline" onClick={() => addFavorite({ source: 'heritage', id: h.name, title: h.name })}>올레 수첩에 담기</button>
+            </div>
+          ))}
+        </div>
       )}
       <p className="small mt-5"><Link to="/olle" className="link-underline">← 코스 목록</Link></p>
     </>

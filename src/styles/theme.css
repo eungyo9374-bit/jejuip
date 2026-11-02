@@ -106,3 +106,7 @@ h1, h2, h3, h4, .serif { font-family: var(--jw-serif); font-weight: 400; letter-
 .stat { font-size: 1.5rem; }
 .forecast { display: flex; flex-wrap: wrap; gap: 1.4rem; border-top: 1px solid var(--jw-line); padding-top: .9rem; }
 .forecast > div { text-align: center; min-width: 48px; }
+
+/* 코스 상세 · 문화유산 목록 */
+.heritage-list { border-top: 1px solid var(--jw-ink); }
+.heritage-row { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 1rem 0; border-bottom: 1px solid var(--jw-line); }

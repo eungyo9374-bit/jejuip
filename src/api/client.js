@@ -36,6 +36,9 @@ export const fetchWeather = (place = '제주시') =>
 export const fetchHeritage = (keyword = '') =>
   get(`/api/heritage?keyword=${encodeURIComponent(keyword)}`)
 
+// 좌표 주변 국가유산 (올레 코스 권역 주변 문화유산)
+export const fetchHeritageNear = (lat, lng) => get(`/api/heritage?lat=${lat}&lng=${lng}`)
+
 // STEP 6: 에이전트
 export const askAgent = (message, history) => post('/api/agent', { message, history })
 

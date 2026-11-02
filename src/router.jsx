@@ -2,6 +2,7 @@ import { createBrowserRouter } from 'react-router-dom'
 import RootLayout from './layouts/RootLayout'
 import Home from './pages/Home'
 import Olle from './pages/Olle'
+import OlleMap from './pages/OlleMap'
 import OlleDetail from './pages/OlleDetail'
 import Agent from './pages/Agent'
 import My from './pages/My'
@@ -12,6 +13,7 @@ import NotFound from './pages/NotFound'
 // 아이콘 이름: https://icons.getbootstrap.com
 export const NAV_ITEMS = [
   { to: '/', label: '홈', icon: 'house' },
+  { to: '/map', label: '올레 지도', icon: 'map' },
   { to: '/olle', label: '올레 코스', icon: 'signpost-split' },
   { to: '/agent', label: '걷기 도우미', icon: 'robot' },
   { to: '/my', label: '내 올레 수첩', icon: 'journal-bookmark' },
@@ -24,6 +26,7 @@ export const router = createBrowserRouter([
     errorElement: <NotFound />,   // 없는 주소로 들어오면
     children: [
       { index: true, element: <Home /> },
+      { path: 'map', element: <OlleMap /> },
       { path: 'olle', element: <Olle /> },
       { path: 'olle/:id', element: <OlleDetail /> },
       { path: 'agent', element: <Agent /> },

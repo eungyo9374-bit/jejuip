@@ -58,6 +58,7 @@ export default function Home() {
           <p className="text-muted small mb-3">날씨를 보고 올레길 코스를 골라 드려요</p>
           <div className="d-flex flex-wrap align-items-center gap-3">
             <WeatherBadge place="서귀포시" />
+            <Link to="/map" className="link-underline">올레 지도 보기</Link>
             <Link to="/olle" className="link-underline">올레 코스 둘러보기</Link>
             <Link to="/agent" className="link-underline">걷기 도우미에게 묻기</Link>
           </div>

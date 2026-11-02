@@ -4,7 +4,7 @@ import { Link, useParams } from 'react-router-dom'
 import PageHeader from '../components/PageHeader'
 import ItemCard from '../components/ItemCard'
 import Mascot from '../components/Mascot'
-import CourseMiniMap from '../components/CourseMiniMap'
+import CourseMap from '../components/CourseMap'
 import { Empty, ErrorAlert, Loading } from '../components/Status'
 import { fetchHeritageNear, fetchNearby, fetchOlle, fetchWeather } from '../api/client'
 import { groupCourses, keyFromId, routeText } from '../lib/olle'
@@ -50,7 +50,7 @@ export default function OlleDetail() {
       <PageHeader title={`${course.course} · ${course.name}`} subtitle={`${course.area} — ${routeText(course)}`} aside={<Mascot course={course.course} size={120} />} />
 
       <Row className="g-4 mb-5">
-        <Col lg={6}><CourseMiniMap g={course} /></Col>
+        <Col lg={6}><CourseMap g={course} spots={spots} /></Col>
         <Col lg={6}>
           <div className="mb-5">
           {course.variants.map((v) => (

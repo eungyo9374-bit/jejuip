@@ -158,3 +158,4 @@ h1, h2, h3, h4, .serif { font-family: var(--jw-serif); font-weight: 400; letter-
 .legend-dot { display: inline-block; width: 11px; height: 11px; border-radius: 50%; border: 2px solid #3d3b37; vertical-align: -1px; margin-right: .25rem; }
 .legend-dot.start { background: #fffdf8; }
 .legend-dot.end { background: #3d3b37; }
+.legend-dot.spot { background: #2b8fd9; border-color: #fffdf8; box-shadow: 0 0 0 1px #3d3b37; width: 9px; height: 9px; }

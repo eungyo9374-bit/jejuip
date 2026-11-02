@@ -5,7 +5,7 @@ import PageHeader from '../components/PageHeader'
 import { ErrorAlert, Loading } from '../components/Status'
 import { fetchOlle } from '../api/client'
 import MAP from '../data/jeju-map.json'
-import { H, W, midpoint, pathD, pr } from '../lib/jejuMap'
+import { H, W, midpoint, pathD, pr, routeD, routeOf, snapPoint } from '../lib/jejuMap'
 import { LandArt, Landmarks, SeaArt } from '../components/JejuArt'
 import Mascot from '../components/Mascot'
 import { useAppStore } from '../store/useAppStore'
@@ -39,7 +39,7 @@ export default function OlleMap() {
     const m = new Map()
     courses.forEach((c) => { const k = keyOf(c); if (!m.has(k)) m.set(k, []); m.get(k).push(c) })
     return [...m.entries()].map(([key, list]) => {
-      const route = MAP.routes[list[0].id]
+      const route = routeOf(key, list[0].id)
       return { key, list, c: list[0], route, mid: route ? midpoint(route.pts) : null }
     }).filter((g) => g.route)
   }, [courses])
@@ -62,7 +62,7 @@ export default function OlleMap() {
     setSelected(key)
     const g = groups.find((x) => x.key === key)
     if (!g) return
-    const xy = g.route.pts.map(pr)
+    const xy = g.route.parts.flat().map(pr)
     const xs = xy.map((p) => p[0]), ys = xy.map((p) => p[1])
     let w = Math.max(Math.max(...xs) - Math.min(...xs), 340) * 1.5
     let h = Math.max(Math.max(...ys) - Math.min(...ys), 340 * (H / W)) * 1.5
@@ -97,7 +97,7 @@ export default function OlleMap() {
                 {/* 코스 경로: 흰 테두리 위에 색 선 */}
                 {groups.map((g) => {
                   const on = g.key === selected, dim = selected && !on
-                  const d = pathD(g.route.pts, g.route.type === 'loop')
+                  const d = routeD(g.route)
                   return (
                     <g key={g.key} opacity={dim ? 0.28 : 1} onMouseEnter={() => setHover(g.key)} onMouseLeave={() => setHover(null)} onClick={() => select(g.key)} style={{ cursor: 'pointer' }}>
                       <path d={d} fill="none" stroke="#f6f1e6" strokeWidth={on ? 15 : 12} strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
@@ -110,7 +110,7 @@ export default function OlleMap() {
 
                 {/* 선택한 코스의 출발·도착 */}
                 {sel && (() => {
-                  const a = pr(sel.route.pts[0]), b = pr(sel.route.pts[sel.route.pts.length - 1])
+                  const a = pr(snapPoint(sel.route, sel.c.startLat, sel.c.startLng)), b = pr(snapPoint(sel.route, sel.c.endLat, sel.c.endLng))
                   return (
                     <g style={{ pointerEvents: 'none' }}>
                       <g transform={`translate(${a[0]} ${a[1]}) scale(${k})`}><circle r="12" fill="#fff" stroke="#2b2926" strokeWidth="4" /><text y="-20" textAnchor="middle" className="map-pin">출발</text></g>
@@ -154,7 +154,7 @@ export default function OlleMap() {
               </svg>
               {selected && <button type="button" className="map-reset" onClick={reset}>전체 보기</button>}
             </div>
-            <p className="photo-credit mb-0">해안선 © OpenStreetMap contributors · 경로선은 해안선을 따라 그린 대략적인 선이에요 (공식 경로 아님, 점선은 내륙 코스를 두 지점으로 이어 표시) · 추자도는 위치를 옮겨 그렸어요</p>
+            <p className="photo-credit mb-0">해안선·경로 © OpenStreetMap contributors · {groups.filter((x) => x.route.accurate).map((x) => x.key).join('·')}코스는 OpenStreetMap에 기록된 실제 올레길, 나머지는 해안선을 따라 그린 대략적인 선이에요 (공식 경로 아님, 점선은 내륙 코스를 두 지점으로 이어 표시) · 추자도는 위치를 옮겨 그렸어요</p>
           </Col>
           <Col lg={3}>
             {sel ? <Panel g={sel} onSave={addFavorite} onClose={reset} /> : (

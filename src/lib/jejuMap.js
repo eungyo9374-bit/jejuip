@@ -22,3 +22,26 @@ export function midpoint(pts) {
   }
   return xy[0]
 }
+
+// ── 코스 경로 ─────────────────────────────────────────────
+// OpenStreetMap 에 기록된 실제 올레길 경로(olle-traces.json)가 있으면 그것을, 없으면 해안선을 따라 그린 대략적인 선을 써요.
+import TRACES from '../data/olle-traces.json'
+import MAP from '../data/jeju-map.json'
+
+export function routeOf(key, id) {
+  const t = TRACES[key]
+  if (t) return { type: 'trace', accurate: true, parts: t.parts, pts: t.parts[0] }
+  const r = MAP.routes[id]
+  return r ? { type: r.type, accurate: false, parts: [r.pts], pts: r.pts } : null
+}
+export const routeD = (route) => route.parts.map((p) => pathD(p, route.type === 'loop')).join(' ')
+
+// 주어진 위치(위도·경도)에서 가장 가까운 경로 위의 점 [경도, 위도]
+export function snapPoint(route, lat, lng) {
+  let best = null, bd = Infinity
+  for (const part of route.parts) for (const p of part) {
+    const d = (p[0] - lng) ** 2 + ((p[1] - lat) * 1.2) ** 2
+    if (d < bd) { bd = d; best = p }
+  }
+  return best
+}

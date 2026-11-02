@@ -95,7 +95,15 @@ export default async function handler(req, res) {
     }
     res.status(200).json({ answer: '도구 호출이 너무 많아 중단했어요. 질문을 좁혀 주세요.', steps });
   } catch (e) {
-    // 429 = 호출 한도 초과, 401 = 키 오류
-    res.status(e.status ?? 500).json({ error: e.status === 429 ? '사용량이 많아요. 1분 뒤 다시 시도하세요.' : e.message });
+    // 자세한 오류는 서버 로그에만 남기고(키처럼 보이는 글자는 가려서), 화면에는 안전한 안내 문구만 보내요.
+    // (오류 메시지에 인증 키가 그대로 들어 있는 경우가 있어서, 그대로 내보내면 키가 노출돼요)
+    console.error('agent error', e.status, String(e.message).replace(/sk-[A-Za-z0-9_-]+/g, 'sk-***'));
+    const status = Number.isInteger(e.status) && e.status >= 400 && e.status < 600 ? e.status : 500;
+    const keyProblem = status === 401 || /header|authorization|api key/i.test(String(e.message));
+    res.status(status).json({
+      error: status === 429 ? '사용량이 많아요. 1분 뒤 다시 시도하세요.'
+        : keyProblem ? '에이전트 키 설정에 문제가 있어요. 관리자에게 알려 주세요.'
+        : '에이전트 호출 중 오류가 났어요. 잠시 뒤 다시 시도해 주세요.',
+    });
   }
 }

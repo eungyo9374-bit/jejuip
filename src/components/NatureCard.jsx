@@ -15,7 +15,7 @@ export default function NatureCard({ item, ratio = '4 / 3', className = '' }) {
     </>
   )
   return (
-    <article className={`feature ${className}`}>
+    <article className={`feature fade-in ${className}`}>
       {item.to ? <Link to={item.to} className="feature-link">{body}</Link> : body}
     </article>
   )

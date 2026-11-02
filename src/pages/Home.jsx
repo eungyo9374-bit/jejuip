@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Card, Col, Form, Row } from 'react-bootstrap'
 import { Link } from 'react-router-dom'
 import { fetchOlle, fetchPlaces, ping } from '../api/client'
@@ -9,10 +9,23 @@ import WeatherBadge from '../components/WeatherBadge'
 import NatureCard from '../components/NatureCard'
 import OlleCard from '../components/OlleCard'
 import { SCENES } from '../data/scenes'
+import { COURSE_PHOTOS } from '../data/olle-photos'
 
 // 홈 = 에디토리얼 소개 + 맨 아래 "동작 체크" 대시보드
 // STEP 0~1 에서 아래 점검이 모두 초록색이 되어야 다음 단계로 넘어갑니다.
-const FEATURED = ['1', '7', '10']   // 홈에 소개할 코스 번호
+const FIRST = ['1', '7', '10']      // 처음 보여줄 대표 코스 (이후 1분마다 다른 코스로 바뀜)
+const ROTATE_MS = 60000
+
+const keyOf = (c) => c.course.replace('코스', '')
+// 목록에서 n개를 골라요. tick 이 올라갈 때마다 다음 n개로 넘어가고, 끝나면 처음으로 돌아갑니다
+const pick = (list, n, tick) => list.length ? Array.from({ length: Math.min(n, list.length) }, (_, i) => list[(tick * n + i) % list.length]) : []
+
+// 일정 시간(ms)마다 숫자가 하나씩 올라가는 타이머. setTick 으로 직접 넘기면 시간이 다시 시작돼요
+function useRotation(ms) {
+  const [tick, setTick] = useState(0)
+  useEffect(() => { const id = setInterval(() => setTick((t) => t + 1), ms); return () => clearInterval(id) }, [ms, tick])
+  return [tick, setTick]
+}
 
 export default function Home() {
   const nickname = useAppStore((s) => s.nickname)
@@ -23,7 +36,8 @@ export default function Home() {
     : { state: 'fail', msg: '.env.local 에 VITE_SUPABASE_URL / ANON_KEY 를 넣으세요' })
   const [api, setApi] = useState({ state: 'wait', msg: '확인 중...' })
   const [hero, setHero] = useState('')
-  const [courses, setCourses] = useState([])
+  const [all, setAll] = useState([])
+  const [tick, setTick] = useRotation(ROTATE_MS)
 
   useEffect(() => {
     // ① Supabase 연결 확인
@@ -36,11 +50,35 @@ export default function Home() {
       .catch(() => setApi({ state: 'fail', msg: 'npm run dev 가 아니라 vercel dev 로 실행했는지 확인' }))
 
     // ③ 대표 코스 — 올레코스현황 API
-    fetchOlle().then((list) => setCourses(FEATURED.map((id) => list.find((c) => c.id === id)).filter(Boolean))).catch(() => {})
+    fetchOlle().then(setAll).catch(() => {})
 
     // ④ 첫 화면 사진 — 실패하면 그라데이션 배경으로 대신 보여줍니다
     fetchPlaces('하도', '12').then((list) => setHero(list.find((p) => p.image)?.image ?? '')).catch(() => {})
   }, [])
+
+  // 같은 번호의 갈래(3코스 A/B 등)는 하나로 묶고, 처음 보여줄 코스가 맨 앞에 오도록 정렬
+  const groups = useMemo(() => {
+    const m = new Map()
+    all.forEach((c) => { const k = keyOf(c); if (!m.has(k)) m.set(k, c) })
+    return [...m.entries()].map(([key, c]) => ({ key, c }))
+      .sort((a, b) => (FIRST.includes(a.key) ? FIRST.indexOf(a.key) : 99) - (FIRST.includes(b.key) ? FIRST.indexOf(b.key) : 99))
+  }, [all])
+  const featured = pick(groups, 3, tick).map((g) => g.c)
+
+  // 갤러리: 직접 설명을 쓴 풍경 7장 + 나머지 코스의 대표 사진(코스 정보로 설명을 자동 생성)
+  const pool = useMemo(() => {
+    const curated = Object.values(SCENES)
+    const have = new Set(curated.map((x) => x.to.replace('/olle/', '').replace(/[ab]$/, '')))
+    const extra = groups.filter((g) => COURSE_PHOTOS[g.key] && !have.has(g.key)).map(({ key, c }) => ({
+      to: `/olle/${c.id}`,
+      kind: `${c.course} · ${c.name.replace(/\([AB]\)/, '')}`,
+      name: COURSE_PHOTOS[key].spot,
+      desc: `${c.course}(${c.start}${c.end && c.end !== c.start ? ` → ${c.end}` : ''}) 가까이에 있는 명소예요. 코스 거리 ${c.distance}, 걷는 데 ${c.duration} 걸려요.`,
+      image: COURSE_PHOTOS[key].image,
+    }))
+    return [...curated, ...extra]
+  }, [groups])
+  const g = pick(pool, 7, tick)   // g[0]~g[6]: 갤러리 칸 7개
 
   return (
     <>
@@ -70,11 +108,15 @@ export default function Home() {
           <Col lg={4}>
             <h3 className="serif" style={{ fontSize: '1.7rem' }}>올레길,<br />이런 코스가 있어요</h3>
             <p className="text-muted small">제주 해안과 마을을 잇는 길. 거리와 소요시간으로 오늘 걸을 코스를 골라 보세요.</p>
-            <Link to="/olle" className="link-underline">전체 코스 보기</Link>
+            <div className="d-flex flex-wrap gap-3 align-items-center">
+              <Link to="/olle" className="link-underline">전체 코스 보기</Link>
+              <button type="button" className="link-underline" onClick={() => setTick((t) => t + 1)}>다른 코스 보기 ↻</button>
+            </div>
+            <p className="small text-muted mt-2 mb-0">추천 코스와 사진은 1분마다 바뀌어요.</p>
           </Col>
           <Col lg={8}>
             <Row xs={1} md={3} className="g-4">
-              {courses.map((c) => (
+              {featured.map((c) => (
                 <Col key={c.id}>
                   <OlleCard c={c} onSave={() => addFavorite({ source: 'olle', id: c.id, title: `${c.course} ${c.name}` })} />
                 </Col>
@@ -86,8 +128,8 @@ export default function Home() {
 
       <section className="section-gap">
         <Row className="g-4 g-lg-5">
-          <Col md={7}><NatureCard item={SCENES.jongdal} /></Col>
-          <Col md={5}><NatureCard item={SCENES.daepo} ratio="1 / 1.05" /></Col>
+          <Col md={7}><NatureCard key={g[0]?.name} item={g[0] ?? SCENES.jongdal} /></Col>
+          <Col md={5}><NatureCard key={g[1]?.name} item={g[1] ?? SCENES.daepo} ratio="1 / 1.05" /></Col>
         </Row>
       </section>
 
@@ -99,9 +141,9 @@ export default function Home() {
           </Col>
           <Col lg={8}>
             <Row xs={1} md={3} className="g-4">
-              <Col><NatureCard item={SCENES.oedolgae} ratio="3 / 4" /></Col>
-              <Col><NatureCard item={SCENES.keunyeong} ratio="3 / 4" /></Col>
-              <Col><NatureCard item={SCENES.udo} ratio="3 / 4" /></Col>
+              <Col><NatureCard key={g[2]?.name} item={g[2] ?? SCENES.oedolgae} ratio="3 / 4" /></Col>
+              <Col><NatureCard key={g[3]?.name} item={g[3] ?? SCENES.keunyeong} ratio="3 / 4" /></Col>
+              <Col><NatureCard key={g[4]?.name} item={g[4] ?? SCENES.udo} ratio="3 / 4" /></Col>
             </Row>
           </Col>
         </Row>
@@ -110,8 +152,8 @@ export default function Home() {
       <div className="band">
         <div>
           <Row className="g-4 g-lg-5">
-            <Col md={7}><NatureCard item={SCENES.hyeongje} /></Col>
-            <Col md={5}><NatureCard item={SCENES.hamdeok} ratio="1 / 1.05" /></Col>
+            <Col md={7}><NatureCard key={g[5]?.name} item={g[5] ?? SCENES.hyeongje} /></Col>
+            <Col md={5}><NatureCard key={g[6]?.name} item={g[6] ?? SCENES.hamdeok} ratio="1 / 1.05" /></Col>
           </Row>
           <div className="photo-credit">사진 · 한국관광공사 TourAPI</div>
         </div>

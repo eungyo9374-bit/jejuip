@@ -131,3 +131,8 @@ h1, h2, h3, h4, .serif { font-family: var(--jw-serif); font-weight: 400; letter-
 .media-cta { position: absolute; left: 0; bottom: 0; background: var(--jw-ink); color: #fff; font-size: .78rem; padding: .45rem .9rem; opacity: 0; transform: translateY(6px); transition: opacity .25s, transform .25s; }
 .feature-link:hover .media-cta, .feature-link:focus-visible .media-cta { opacity: 1; transform: none; }
 @media (hover: none) { .media-cta { opacity: 1; transform: none; } }
+
+/* 1분마다 바뀌는 카드가 부드럽게 나타나도록 */
+@keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+.fade-in { animation: fadeUp .9s ease both; }
+@media (prefers-reduced-motion: reduce) { .fade-in { animation: none; } }

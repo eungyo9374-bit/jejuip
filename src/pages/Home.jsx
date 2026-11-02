@@ -13,8 +13,8 @@ import { COURSE_PHOTOS } from '../data/olle-photos'
 
 // 홈 = 에디토리얼 소개 + 맨 아래 "동작 체크" 대시보드
 // STEP 0~1 에서 아래 점검이 모두 초록색이 되어야 다음 단계로 넘어갑니다.
-const FIRST = ['1', '7', '10']      // 처음 보여줄 대표 코스 (이후 1분마다 다른 코스로 바뀜)
-const ROTATE_MS = 60000
+const FIRST = ['1', '7', '10']      // 처음 보여줄 대표 코스 (이후 30초마다 다른 코스로 바뀜)
+const ROTATE_MS = 30000
 
 const keyOf = (c) => c.course.replace('코스', '')
 // 목록에서 n개를 골라요. tick 이 올라갈 때마다 다음 n개로 넘어가고, 끝나면 처음으로 돌아갑니다
@@ -112,7 +112,7 @@ export default function Home() {
               <Link to="/olle" className="link-underline">전체 코스 보기</Link>
               <button type="button" className="link-underline" onClick={() => setTick((t) => t + 1)}>다른 코스 보기 ↻</button>
             </div>
-            <p className="small text-muted mt-2 mb-0">추천 코스와 사진은 1분마다 바뀌어요.</p>
+            <p className="small text-muted mt-2 mb-0">추천 코스와 사진은 30초마다 바뀌어요.</p>
           </Col>
           <Col lg={8}>
             <Row xs={1} md={3} className="g-4">

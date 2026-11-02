@@ -123,3 +123,11 @@ h1, h2, h3, h4, .serif { font-family: var(--jw-serif); font-weight: 400; letter-
 .map-reset { position: absolute; top: 12px; right: 12px; background: var(--jw-ink); color: #fff; border: 0; padding: .45rem .9rem; font-size: .8rem; }
 .map-chips { display: flex; flex-wrap: wrap; gap: .35rem; }
 .map-chips .chip { min-width: 2.6rem; padding: .2rem .5rem; }
+
+/* 갤러리 사진 → 코스 이동 */
+.feature-link { display: block; color: inherit; text-decoration: none; }
+.feature-link:hover h3 { color: var(--jw-accent); }
+.feature .media { position: relative; }
+.media-cta { position: absolute; left: 0; bottom: 0; background: var(--jw-ink); color: #fff; font-size: .78rem; padding: .45rem .9rem; opacity: 0; transform: translateY(6px); transition: opacity .25s, transform .25s; }
+.feature-link:hover .media-cta, .feature-link:focus-visible .media-cta { opacity: 1; transform: none; }
+@media (hover: none) { .media-cta { opacity: 1; transform: none; } }

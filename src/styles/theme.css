@@ -148,3 +148,13 @@ h1, h2, h3, h4, .serif { font-family: var(--jw-serif); font-weight: 400; letter-
 .olle-card:hover .mascot { transform: translateY(-3px) rotate(-3deg); }
 .map-panel .mascot { margin-bottom: .4rem; }
 .page-head .mascot { margin-bottom: -.6rem; }
+
+/* 코스 위치 미니 지도 */
+.mini-map-wrap { margin: 0; }
+.mini-map { display: block; width: 100%; height: auto; aspect-ratio: 1110 / 860; border: 1px solid var(--jw-line); background: #f6f1e6; }
+.mini-pulse { transform-box: fill-box; transform-origin: center; animation: miniPing 1.8s ease-out infinite; }
+@keyframes miniPing { 0% { transform: scale(.7); opacity: .95; } 100% { transform: scale(3.2); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .mini-pulse { animation: none; opacity: .6; } }
+.legend-dot { display: inline-block; width: 11px; height: 11px; border-radius: 50%; border: 2px solid #3d3b37; vertical-align: -1px; margin-right: .25rem; }
+.legend-dot.start { background: #fffdf8; }
+.legend-dot.end { background: #3d3b37; }

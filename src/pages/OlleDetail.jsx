@@ -4,6 +4,7 @@ import { Link, useParams } from 'react-router-dom'
 import PageHeader from '../components/PageHeader'
 import ItemCard from '../components/ItemCard'
 import Mascot from '../components/Mascot'
+import CourseMiniMap from '../components/CourseMiniMap'
 import { Empty, ErrorAlert, Loading } from '../components/Status'
 import { fetchHeritageNear, fetchNearby, fetchOlle, fetchWeather } from '../api/client'
 import { groupCourses, keyFromId, routeText } from '../lib/olle'
@@ -49,7 +50,9 @@ export default function OlleDetail() {
       <PageHeader title={`${course.course} · ${course.name}`} subtitle={`${course.area} — ${routeText(course)}`} aside={<Mascot course={course.course} size={120} />} />
 
       <Row className="g-4 mb-5">
-        <Col md={5}>
+        <Col lg={6}><CourseMiniMap g={course} /></Col>
+        <Col lg={6}>
+          <div className="mb-5">
           {course.variants.map((v) => (
             <div key={v.id} className="mb-3">
               {course.multi && <div className="eyebrow">{v.label}코스</div>}
@@ -64,8 +67,8 @@ export default function OlleDetail() {
             <button className="link-underline" onClick={save}>올레 수첩에 담기</button>
             <Link to={`/agent?q=${encodeURIComponent(question)}`} className="link-underline">걷기 도우미에게 묻기</Link>
           </div>
-        </Col>
-        <Col md={7}>
+          </div>
+          <div>
           <div className="eyebrow">오늘의 걷기 날씨 · {course.weatherPlace} 기준</div>
           {now ? (
             <>
@@ -79,6 +82,7 @@ export default function OlleDetail() {
               <p className="small text-muted mt-2 mb-0">기상청 단기예보는 제주시·서귀포시 기준이라 해안·산지 날씨와 다를 수 있어요.</p>
             </>
           ) : <p className="text-muted small">날씨를 불러오지 못했어요.</p>}
+          </div>
         </Col>
       </Row>
 

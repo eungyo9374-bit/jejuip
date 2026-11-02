@@ -5,35 +5,12 @@ import PageHeader from '../components/PageHeader'
 import { ErrorAlert, Loading } from '../components/Status'
 import { fetchOlle } from '../api/client'
 import MAP from '../data/jeju-map.json'
+import { H, W, midpoint, pathD, pr } from '../lib/jejuMap'
 import { LandArt, Landmarks, SeaArt } from '../components/JejuArt'
 import Mascot from '../components/Mascot'
 import { useAppStore } from '../store/useAppStore'
 
-// ── 지도 좌표계 ───────────────────────────────────────────
-// 위도·경도를 평면(SVG) 좌표로 바꿉니다. 추자도는 본섬에서 멀어서 한 화면에 들어오도록 아래쪽으로 옮겨 그렸어요.
-const S = 1500                        // 1도당 픽셀
-const KX = Math.cos((33.4 * Math.PI) / 180)
-const LNG0 = 126.12
-const LAT_TOP = 33.67
-const CHUJA_SHIFT = 0.37
-const pr = ([lng, lat]) => [(lng - LNG0) * KX * S, (LAT_TOP - (lat > 33.8 ? lat - CHUJA_SHIFT : lat)) * S]
-const W = 1110, H = 860               // 처음 보이는 전체 영역
-
 const keyOf = (c) => c.course.replace('코스', '')
-const pathD = (pts, close) => pts.map((p, i) => { const [x, y] = pr(p); return `${i ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}` }).join('') + (close ? 'Z' : '')
-
-// 경로의 한가운데 점 (코스 번호 배지를 놓는 자리)
-function midpoint(pts) {
-  const xy = pts.map(pr)
-  let total = 0; const seg = []
-  for (let i = 1; i < xy.length; i++) { const d = Math.hypot(xy[i][0] - xy[i - 1][0], xy[i][1] - xy[i - 1][1]); seg.push(d); total += d }
-  let acc = 0
-  for (let i = 0; i < seg.length; i++) {
-    if (acc + seg[i] >= total / 2) { const t = (total / 2 - acc) / (seg[i] || 1); return [xy[i][0] + (xy[i + 1][0] - xy[i][0]) * t, xy[i][1] + (xy[i + 1][1] - xy[i][1]) * t] }
-    acc += seg[i]
-  }
-  return xy[0]
-}
 
 const LABELS = [
   ['제주시', 126.55, 33.455], ['서귀포시', 126.56, 33.28], ['조천', 126.65, 33.47], ['구좌', 126.8, 33.46], ['성산', 126.88, 33.4],

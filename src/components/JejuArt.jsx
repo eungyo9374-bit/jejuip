@@ -170,9 +170,10 @@ export function SeaArt({ mainPoly, rings, pathD, moving }) {
 }
 
 // 땅: 연한 수채 + 펜 윤곽 + 손으로 그린 나무·오름
-export function LandArt({ rings, mainPoly, pr, pathD, moving }) {
+export function LandArt({ rings, mainPoly, pr, pathD, moving, light }) {
   const deco = useMemo(() => {
     const r = rng(11), trees = [], mounds = [], tufts = []
+    if (light) return { trees, mounds, tufts }   // 미니 지도는 간단하게
     const [hx, hy] = pr([126.53, 33.372])
     const bad = (x, y) => Math.hypot(x - hx, y - hy) < 120
     for (let i = 0; i < 800 && trees.length < 130; i++) {
@@ -188,7 +189,7 @@ export function LandArt({ rings, mainPoly, pr, pathD, moving }) {
       if (inPoly(x, y, mainPoly) && !bad(x, y) && mounds.every(([a, b]) => Math.hypot(a - x, b - y) > 60)) mounds.push([x, y, 0.55 + r() * 0.5])
     }
     return { trees: trees.sort((a, b) => a[1] - b[1]), mounds, tufts }
-  }, [mainPoly, pr])
+  }, [mainPoly, pr, light])
   const mainD = pathD(rings.find((r) => r.main).pts, true)
   return (
     <g>

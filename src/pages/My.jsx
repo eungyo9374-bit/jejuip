@@ -24,7 +24,7 @@ export default function My() {
         <Row xs={1} sm={2} lg={3} className="g-3">
           {favorites.map((f) => (
             <Col key={f.id}>
-              <ItemCard title={f.title} art={artOf(f)} badge={{ olle: '올레 코스', tour: '주변 명소', heritage: '문화유산' }[f.source] ?? f.source}
+              <ItemCard title={f.title} image={f.image} art={artOf(f)} badge={{ olle: '올레 코스', tour: '주변 명소', heritage: '문화유산' }[f.source] ?? f.source}
                 subtitle={new Date(f.created_at).toLocaleString('ko-KR')} onRemove={() => removeFavorite(f.id)} />
             </Col>
           ))}

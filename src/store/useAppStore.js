@@ -35,18 +35,26 @@ export const useAppStore = create(
         if (error) return get().toast(error.message, 'danger')
         set({ favorites: data })
       },
-      addFavorite: async ({ source, id, title }) => {
+      addFavorite: async ({ source, id, title, image }) => {
         if (!supabase) return get().toast('Supabase 설정(.env.local)이 필요해요', 'warning')
         const nickname = get().nickname || '익명'
         const row = { nickname, source, item_id: String(id), title }
+        if (image) row.image = image   // 사진이 있는 항목은 사진 주소도 같이 저장해요
         // 같은 항목을 두 번 담지 않도록 먼저 확인해요
         const { data: dup } = await supabase.from('favorites').select('id')
           .eq('nickname', nickname).eq('source', source).eq('item_id', row.item_id).limit(1)
         if (dup?.length) return get().toast('이미 올레 수첩에 담겨 있어요', 'warning')
-        const { data, error } = await supabase.from('favorites').insert(row).select().single()
+        let { data, error } = await supabase.from('favorites').insert(row).select().single()
+        let noImageCol = false
+        if (error && image && /image/i.test(error.message)) {
+          // favorites 테이블에 image 칸이 아직 없는 경우: 사진 없이 저장해요
+          noImageCol = true
+          delete row.image
+          ;({ data, error } = await supabase.from('favorites').insert(row).select().single())
+        }
         if (error) return get().toast(error.message, 'danger')
         set({ favorites: [data, ...get().favorites] })
-        get().toast('올레 수첩에 담았어요')
+        get().toast(noImageCol ? '담았어요 (사진은 Supabase 에 image 칸을 추가하면 같이 저장돼요)' : '올레 수첩에 담았어요', noImageCol ? 'warning' : 'success')
       },
       // 수첩에서 빼기 — Supabase 에서 지우고 화면 목록에서도 바로 뺍니다
       removeFavorite: async (id) => {

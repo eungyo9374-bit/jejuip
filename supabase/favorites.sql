@@ -7,6 +7,7 @@ create table if not exists favorites (
   source text not null,       -- 'olle' | 'tour' | 'heritage'
   item_id text not null,
   title text not null,
+  image text,                 -- 사진이 있는 항목(주변 명소)의 사진 주소
   created_at timestamptz default now()
 );
 alter table favorites enable row level security;
@@ -15,4 +16,7 @@ create policy "insert all" on favorites for insert with check (true);
 
 -- ★ 수첩에서 빼기(삭제)에 필요한 정책
 create policy "delete all" on favorites for delete using (true);
+
+-- ★ 사진도 같이 저장하려면 (이미 테이블을 만든 경우 이 한 줄을 실행)
+alter table favorites add column if not exists image text;
 -- ※ 실습용 정책(누구나 읽기·쓰기·삭제)입니다. 실제 서비스에서는 Supabase Auth 로 로그인한 사용자만 쓰게 바꿉니다.

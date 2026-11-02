@@ -101,7 +101,7 @@ export default function OlleDetail() {
           {spots.map((p) => (
             <Col key={p.id}>
               <ItemCard title={p.title} subtitle={p.addr} image={p.image} badge="관광지"
-                onSave={() => addFavorite({ source: 'tour', id: p.id, title: p.title })} />
+                onSave={() => addFavorite({ source: 'tour', id: p.id, title: p.title, image: p.image })} />
             </Col>
           ))}
         </Row>

@@ -5,7 +5,7 @@ import PageHeader from '../components/PageHeader'
 import { ErrorAlert, Loading } from '../components/Status'
 import { fetchOlle } from '../api/client'
 import MAP from '../data/jeju-map.json'
-import { H, W, midpoint, pathD, pr, routeD, routeOf, snapPoint } from '../lib/jejuMap'
+import { H, W, midpoint, pathD, pr, routeD, routeOf } from '../lib/jejuMap'
 import { LandArt, Landmarks, SeaArt } from '../components/JejuArt'
 import Mascot from '../components/Mascot'
 import { useAppStore } from '../store/useAppStore'
@@ -110,7 +110,7 @@ export default function OlleMap() {
 
                 {/* 선택한 코스의 출발·도착 */}
                 {sel && (() => {
-                  const a = pr(snapPoint(sel.route, sel.c.startLat, sel.c.startLng)), b = pr(snapPoint(sel.route, sel.c.endLat, sel.c.endLng))
+                  const a = pr(sel.route.pts[0]), b = pr(sel.route.pts[sel.route.pts.length - 1])
                   return (
                     <g style={{ pointerEvents: 'none' }}>
                       <g transform={`translate(${a[0]} ${a[1]}) scale(${k})`}><circle r="12" fill="#fff" stroke="#2b2926" strokeWidth="4" /><text y="-20" textAnchor="middle" className="map-pin">출발</text></g>

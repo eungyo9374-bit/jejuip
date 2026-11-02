@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import COAST from '../data/jeju-coast-detail.json'
 import MAP from '../data/jeju-map.json'
-import { H, W, pathD, pr, routeD, routeOf, snapPoint } from '../lib/jejuMap'
+import { H, W, pathD, pr, routeD, routeOf } from '../lib/jejuMap'
 
 const INK = '#4a4743'
 const PAPER = '#f6f1e6'
@@ -22,8 +22,8 @@ const COAST_D = pathD(COAST, true)
 const ISLANDS = MAP.rings.filter((r) => !r.main).map((r) => pathD(r.pts, true))
 
 // 코스 확대 지도 — 이 코스가 지나는 곳만 크게 확대해서 경로·출발/도착·주변 명소를 손그림으로 보여줘요
-// g: lib/olle.js 의 groupCourses() 결과 한 개 / spots: TourAPI 주변 명소 목록(선택)
-export default function CourseMap({ g, spots = [] }) {
+// g: lib/olle.js 의 groupCourses() 결과 한 개
+export default function CourseMap({ g }) {
   const route = useMemo(() => routeOf(g.key, g.variants[0].id), [g])
   const view = useMemo(() => {
     if (!route) return null
@@ -40,8 +40,8 @@ export default function CourseMap({ g, spots = [] }) {
   const c = g.variants[0]
   const pins = useMemo(() => {
     if (!route) return null
-    const s = snapPoint(route, c.startLat, c.startLng), e = snapPoint(route, c.endLat, c.endLng)
-    return { s: pr(s), e: pr(e), loop: route.type === 'loop' || g.start === g.end }
+    // 출발·도착은 경로(선)의 양 끝에 정확히 찍어요
+    return { s: pr(route.pts[0]), e: pr(route.pts[route.pts.length - 1]), loop: route.type === 'loop' || g.start === g.end }
   }, [route, c, g])
 
   // 나무: 화면에 보이는 땅 위에서 경로와 겹치지 않게 흩뿌리기
@@ -56,14 +56,6 @@ export default function CourseMap({ g, spots = [] }) {
     }
     return out.sort((a, b) => a[1] - b[1])
   }, [view, route, px])
-
-  // 화면 안에 들어오는 주변 명소만, 가까운 순으로 최대 6개
-  const pois = useMemo(() => {
-    if (!view) return []
-    return spots.map((p) => ({ ...p, xy: pr([Number(p.lng), Number(p.lat)]) }))
-      .filter((p) => p.xy[0] > view.x + 30 * px && p.xy[0] < view.x + view.w - 30 * px && p.xy[1] > view.y + 30 * px && p.xy[1] < view.y + view.h - 30 * px)
-      .slice(0, 6)
-  }, [view, spots, px])
 
   if (!route || !view) return null
   const d = routeD(route)
@@ -105,14 +97,6 @@ export default function CourseMap({ g, spots = [] }) {
           {trees.map(([x, y, s, id], i) => <use key={i} href={`#${id}`} transform={`translate(${x} ${y}) scale(${s * px * 0.95})`} />)}
         </g>
 
-        {/* 주변 명소 */}
-        {pois.map((p) => (
-          <g key={p.id} transform={`translate(${p.xy[0]} ${p.xy[1]})`}>
-            <circle r={5 * px} fill="#2b8fd9" stroke="#fffdf8" strokeWidth={2 * px} />
-            <text y={-10 * px} textAnchor="middle" className="map-label" style={T(14)}>{p.title.length > 9 ? `${p.title.slice(0, 9)}…` : p.title}</text>
-          </g>
-        ))}
-
         {/* 코스 경로: 종이색 테두리 + 주황빨강 선 */}
         <path d={d} fill="none" stroke={PAPER} strokeWidth="15" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
         <path d={d} fill="none" stroke="#e4572e" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" strokeDasharray={route.type === 'line' ? '2 10' : undefined} vectorEffect="non-scaling-stroke" />
@@ -136,7 +120,7 @@ export default function CourseMap({ g, spots = [] }) {
         </g>
       </svg>
       <figcaption className="small text-muted mt-2">
-        <span className="legend-dot start" /> 출발 <span className="legend-dot end ms-3" /> 도착 <span className="legend-dot spot ms-3" /> 주변 명소
+        <span className="legend-dot start" /> 출발 <span className="legend-dot end ms-3" /> 도착
         <div className="mt-1">
           {route.accurate
             ? '경로: OpenStreetMap에 기록된 실제 올레길 (© OpenStreetMap contributors)'

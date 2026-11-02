@@ -4,6 +4,12 @@ import { Button, Card, Form, InputGroup, Spinner } from 'react-bootstrap'
 import PageHeader from '../components/PageHeader'
 import { useAppStore } from '../store/useAppStore'
 
+// 답변 속 **굵은 글씨** 표시를 실제 굵은 글씨로 보여줘요 (별표 그대로 보이지 않게)
+function RichText({ text }) {
+  return String(text).split(/(\*\*[^*]+\*\*)/g).map((part, i) =>
+    part.startsWith('**') && part.endsWith('**') ? <strong key={i}>{part.slice(2, -2)}</strong> : part)
+}
+
 export default function Agent() {
   const messages = useAppStore((s) => s.messages)
   const loading = useAppStore((s) => s.chatLoading)
@@ -32,7 +38,7 @@ export default function Agent() {
                   {m.steps.map((s) => `${s.tool}(${JSON.stringify(s.args)}) → ${s.count}건`).join(' · ')}
                 </div>
               )}
-              {m.text}
+              <RichText text={m.text} />
             </div>
           ))}
           {loading && <div className="small text-muted"><Spinner size="sm" className="me-2" />에이전트가 도구를 사용하는 중...</div>}

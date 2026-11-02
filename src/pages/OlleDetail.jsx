@@ -8,6 +8,7 @@ import CourseMap from '../components/CourseMap'
 import { Empty, ErrorAlert, Loading } from '../components/Status'
 import { fetchHeritageNear, fetchNearby, fetchOlle, fetchWeather } from '../api/client'
 import { groupCourses, keyFromId, routeText } from '../lib/olle'
+import { CURATED_SPOTS } from '../data/spots'
 import { useAppStore } from '../store/useAppStore'
 
 // 올레 코스 상세 — 코스 정보(올레코스현황) + 날씨(기상청) + 주변 명소(TourAPI) + 주변 문화유산(국가유산청)
@@ -41,6 +42,7 @@ export default function OlleDetail() {
   if (!course) return <Empty text="없는 코스예요" />
 
   const now = weather[0]
+  const picks = CURATED_SPOTS[course.key] ?? []   // 직접 추가한 추천 명소
   const walkable = now && now.rain === '없음' && now.pop < 40
   const save = () => addFavorite({ source: 'olle', id: course.key, title: `${course.course} ${course.name}` })
   const question = `${course.course} ${course.name} 코스를 걸으려는데 오늘 날씨랑 주변에서 볼 만한 곳 알려줘`
@@ -88,8 +90,14 @@ export default function OlleDetail() {
 
       <h3 className="serif mb-3" style={{ fontSize: '1.4rem' }}>코스 주변 명소</h3>
       <p className="small text-muted mb-3">코스가 지나는 권역의 중심에서 가까운 순으로 보여드려요 (대략적인 위치 기준).</p>
-      {spots.length === 0 ? <Empty text="주변 명소 검색 결과가 없어요" /> : (
+      {spots.length === 0 && picks.length === 0 ? <Empty text="주변 명소 검색 결과가 없어요" /> : (
         <Row xs={1} sm={2} lg={3} className="g-4">
+          {picks.map((s) => (
+            <Col key={s.id}>
+              <ItemCard title={s.title} subtitle={s.addr} desc={s.desc} art={s.art} badge="추천 명소"
+                onSave={() => addFavorite({ source: 'tour', id: s.id, title: s.title })} />
+            </Col>
+          ))}
           {spots.map((p) => (
             <Col key={p.id}>
               <ItemCard title={p.title} subtitle={p.addr} image={p.image} badge="관광지"

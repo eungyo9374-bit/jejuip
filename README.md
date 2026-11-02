@@ -7,7 +7,7 @@
 
 | | |
 |---|---|
-| **배포 주소** | **https://jejuip-a9lx.vercel.app** |
+| **배포 주소** | **https://jejuip.vercel.app** |
 | **GitHub** | https://github.com/eungyo9374-bit/jejuip |
 | **QR 코드** | ![배포 주소 QR 코드](images/qr.png) |
 

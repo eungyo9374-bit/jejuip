@@ -24,7 +24,7 @@ export default function RootLayout() {
               <NavLink key={item.to} to={item.to}>{item.label}</NavLink>
             ))}
           </nav>
-          <Link to="/" className="brand">제주를 걷다</Link>
+          <Link to="/" className="brand" aria-label="제주를 걷다">JEJU</Link>
           <div className="header-right">
             {nickname && <span className="d-none d-md-inline"><i className="bi bi-person me-1" />{nickname}</span>}
             <Link to="/agent" className="btn-dark-sq">걷기 도우미</Link>
@@ -47,7 +47,7 @@ export default function RootLayout() {
 
       <footer className="site-footer">
         <Container className="px-4" style={{ maxWidth: 1240 }}>
-          <Link to="/" className="brand">제주를 걷다</Link>
+          <Link to="/" className="brand" aria-label="제주를 걷다">JEJU</Link>
           제주대 청년도약 부트캠프 1기 · 데이터 출처: 한국관광공사 · 기상청 · 국가유산청(공공데이터포털)
         </Container>
       </footer>

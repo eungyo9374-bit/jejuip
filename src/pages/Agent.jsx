@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Button, Card, Form, InputGroup, Spinner } from 'react-bootstrap'
 import PageHeader from '../components/PageHeader'
 import { useAppStore } from '../store/useAppStore'
@@ -7,7 +8,8 @@ export default function Agent() {
   const messages = useAppStore((s) => s.messages)
   const loading = useAppStore((s) => s.chatLoading)
   const sendMessage = useAppStore((s) => s.sendMessage)
-  const [input, setInput] = useState('')
+  const [params] = useSearchParams()
+  const [input, setInput] = useState(params.get('q') ?? '')   // 코스 상세에서 넘어온 질문
 
   function onSubmit(e) {
     e.preventDefault()
@@ -18,10 +20,10 @@ export default function Agent() {
 
   return (
     <>
-      <PageHeader title="걷기 도우미" subtitle="날씨와 자연 명소 데이터를 직접 조회해 걸을 곳을 골라 드려요" />
+      <PageHeader title="걷기 도우미" subtitle="올레 코스·날씨·주변 명소 데이터를 직접 조회해 걸을 코스를 골라 드려요" />
       <Card className="chat-box mb-3">
         <Card.Body>
-          {messages.length === 0 && <div className="text-muted">예) 내일 서귀포 날씨 보고 걷기 좋은 오름 추천해줘</div>}
+          {messages.length === 0 && <div className="text-muted">예) 오늘 서귀포 날씨 보고 가볍게 걸을 올레 코스 추천해줘</div>}
           {messages.map((m, i) => (
             <div key={i} className={`msg ${m.role}`}>
               {m.steps?.length > 0 && (

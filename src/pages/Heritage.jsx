@@ -8,7 +8,7 @@ import { useAppStore } from '../store/useAppStore'
 
 export default function Heritage() {
   const addFavorite = useAppStore((s) => s.addFavorite)
-  const [keyword, setKeyword] = useState('')
+  const [keyword, setKeyword] = useState('연대')
   const [list, setList] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -24,10 +24,10 @@ export default function Heritage() {
 
   return (
     <>
-      <PageHeader title="한라산·바다 자연유산" subtitle="국가유산청 — 천연기념물·명승 검색" />
+      <PageHeader title="올레길에서 만나는 문화유산" subtitle="국가유산청 — 해안 연대·성곽 등 길 곁에 있는 문화유산을 찾아보세요" />
       <Form onSubmit={search} className="mb-4">
         <InputGroup>
-          <Form.Control value={keyword} onChange={(e) => setKeyword(e.target.value)} placeholder="예: 한라산, 용암동굴, 천지연" />
+          <Form.Control value={keyword} onChange={(e) => setKeyword(e.target.value)} placeholder="예: 연대, 환해장성, 방사탑, 해녀" />
           <Button type="submit"><i className="bi bi-search" /></Button>
         </InputGroup>
       </Form>

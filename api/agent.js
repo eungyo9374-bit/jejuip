@@ -2,6 +2,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { searchTour } from '../server/tour.js';
 import { getWeather } from '../server/weather.js';
 import { searchHeritage } from '../server/heritage.js';
+import { getOlleCourses } from '../server/olle.js';
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const MODEL = 'claude-sonnet-5-5';
@@ -9,8 +10,19 @@ const MODEL = 'claude-sonnet-5-5';
 // ① 도구 설명서: Claude는 이 설명만 보고 "어떤 도구를 언제 쓸지" 결정한다
 const tools = [
   {
+    name: 'get_olle_courses',
+    description: '제주올레 코스 현황(코스 번호·이름·거리·소요시간·시작/도착 지점·권역·날씨 기준 지역)을 조회한다. 올레 코스를 추천하거나 코스 정보를 물으면 가장 먼저 사용한다. keyword 로 코스 번호나 지명(예: 7코스, 광치기)을, maxKm 으로 최대 거리를 제한할 수 있다.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        keyword: { type: 'string', description: '코스 번호나 지명 (예: 7코스, 쇠소깍, 우도)' },
+        maxKm: { type: 'number', description: '이 거리(km) 이하의 코스만. 가볍게 걷고 싶을 때 사용' },
+      },
+    },
+  },
+  {
     name: 'search_tour_places',
-    description: '한국관광공사 TourAPI로 제주의 관광지·문화시설·축제·음식점을 검색한다',
+    description: '한국관광공사 TourAPI로 올레 코스의 시작·도착 지점 주변 관광지·문화시설·축제·음식점을 검색한다. 지명(예: 광치기해변, 쇠소깍)이나 포구·해변·카페 같은 단어로 찾는다',
     input_schema: {
       type: 'object',
       properties: {
@@ -21,7 +33,7 @@ const tools = [
   },
   {
     name: 'get_weather',
-    description: '기상청 단기예보로 제주시/서귀포시의 앞으로 몇 시간 기온·하늘·강수를 조회한다',
+    description: '기상청 단기예보로 제주시/서귀포시의 앞으로 몇 시간 기온·하늘·강수를 조회한다. 코스를 추천하기 전에 그 코스의 weatherPlace 값으로 호출해 걷기 좋은지 확인한다',
     input_schema: {
       type: 'object',
       properties: { place: { type: 'string', enum: ['제주시', '서귀포시'] } },
@@ -30,18 +42,20 @@ const tools = [
   },
   {
     name: 'search_heritage',
-    description: '국가유산청 API로 제주의 국가유산(문화재)을 이름으로 검색한다',
+    description: '국가유산청 API로 올레길 곁의 제주 국가유산(해안 연대·성곽·방사탑 등)을 이름으로 검색한다',
     input_schema: { type: 'object', properties: { keyword: { type: 'string' } } },
   },
 ];
 
 // ② 도구 이름 → 실제 실행할 함수
-const runTool = { search_tour_places: searchTour, get_weather: getWeather, search_heritage: searchHeritage };
+const runTool = { get_olle_courses: getOlleCourses, search_tour_places: searchTour, get_weather: getWeather, search_heritage: searchHeritage };
 
-const SYSTEM = `너는 제주 문화·콘텐츠 IP 가이드 에이전트다.
-- 장소·날씨·유산 정보는 반드시 도구로 확인한 뒤 답한다.
-- 도구 결과에 없는 장소는 지어내지 않는다.
-- 비가 오거나 강수확률이 높으면 실내 대안을 함께 제안한다.
+const SYSTEM = `너는 '제주를 걷다'의 올레길 추천 도우미다. 트레킹을 좋아하는 관광객이 대상이다.
+- 올레 코스 정보는 반드시 get_olle_courses 로, 날씨는 get_weather 로, 주변 명소·문화유산은 해당 도구로 확인한 뒤 답한다.
+- 코스를 추천할 때는 먼저 코스를 조회하고, 그 코스의 weatherPlace 로 날씨를 확인한다.
+- 도구 결과에 없는 코스·장소는 지어내지 않는다. 없으면 "결과가 없다"고 답한다.
+- 비가 오거나 강수확률이 60% 이상이면 짧은 코스(maxKm 12 이하)나 실내 대안을 함께 제안한다.
+- 기상청 예보는 제주시·서귀포시 기준이라 해안·산지와 다를 수 있음을 필요하면 알린다.
 - 답은 한국어로, 5문장 이내로 짧게.`;
 
 export default async function handler(req, res) {

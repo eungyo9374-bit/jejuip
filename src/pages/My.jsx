@@ -13,13 +13,13 @@ export default function My() {
 
   return (
     <>
-      <PageHeader title="내 탐험 수첩" subtitle="가고 싶은 오름·길을 저장해 두세요" />
+      <PageHeader title="내 올레 수첩" subtitle="가고 싶은 올레 코스와 명소를 저장해 두세요" />
       <Form.Control className="mb-4" style={{ maxWidth: 320 }} placeholder="닉네임"
         value={nickname} onChange={(e) => setNickname(e.target.value)} />
       {favLoading ? <Loading /> : favorites.length === 0 ? <Empty text="아직 저장한 항목이 없어요" /> : (
         <Row xs={1} sm={2} lg={3} className="g-3">
           {favorites.map((f) => (
-            <Col key={f.id}><ItemCard title={f.title} badge={f.source} subtitle={new Date(f.created_at).toLocaleString('ko-KR')} /></Col>
+            <Col key={f.id}><ItemCard title={f.title} badge={{ olle: '올레 코스', tour: '주변 명소', heritage: '문화유산' }[f.source] ?? f.source} subtitle={new Date(f.created_at).toLocaleString('ko-KR')} /></Col>
           ))}
         </Row>
       )}

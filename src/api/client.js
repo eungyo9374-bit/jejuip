@@ -28,6 +28,9 @@ export const ping = () => get('/api/hello')
 // STEP 2~4: 공공데이터 API
 export const fetchPlaces = (keyword = '', type = '12') =>
   get(`/api/tour?keyword=${encodeURIComponent(keyword)}&type=${type}`)
+
+// 좌표 주변 관광지 (올레 코스 권역 주변 명소)
+export const fetchNearby = (lat, lng, type = '12') => get(`/api/tour?lat=${lat}&lng=${lng}&type=${type}`)
 export const fetchWeather = (place = '제주시') =>
   get(`/api/weather?place=${encodeURIComponent(place)}`)
 export const fetchHeritage = (keyword = '') =>
@@ -35,3 +38,6 @@ export const fetchHeritage = (keyword = '') =>
 
 // STEP 6: 에이전트
 export const askAgent = (message, history) => post('/api/agent', { message, history })
+
+// 올레 코스 현황 (제주특별자치도_올레코스현황)
+export const fetchOlle = (keyword = '') => get(`/api/olle?keyword=${encodeURIComponent(keyword)}`)

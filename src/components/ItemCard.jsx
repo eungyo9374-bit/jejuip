@@ -12,7 +12,7 @@ export default function ItemCard({ title, subtitle, image, badge, onSave }) {
       {subtitle && <p className="item-sub">{subtitle}</p>}
       {onSave && (
         <div className="mt-auto">
-          <button type="button" className="link-underline" onClick={onSave}>탐험 수첩에 담기</button>
+          <button type="button" className="link-underline" onClick={onSave}>올레 수첩에 담기</button>
         </div>
       )}
     </article>

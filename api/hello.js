@@ -5,6 +5,7 @@ export default function handler(req, res) {
     ok: true,
     time: new Date().toISOString(),
     hasDataKey: Boolean(process.env.DATA_GO_KR_KEY),
-    hasClaudeKey: Boolean(process.env.ANTHROPIC_API_KEY),
+    // 값이 비었거나 '# 주석' 글자가 값으로 읽힌 경우는 "없음" 으로 봅니다
+    hasClaudeKey: /^sk-/.test((process.env.ANTHROPIC_API_KEY ?? '').trim()),
   });
 }

@@ -1,6 +1,8 @@
 import { createBrowserRouter } from 'react-router-dom'
 import RootLayout from './layouts/RootLayout'
 import Home from './pages/Home'
+import Olle from './pages/Olle'
+import OlleDetail from './pages/OlleDetail'
 import Places from './pages/Places'
 import Heritage from './pages/Heritage'
 import Agent from './pages/Agent'
@@ -13,10 +15,11 @@ import NotFound from './pages/NotFound'
 // ※ Places/Heritage 는 샘플 이름입니다. 자신의 주제에 맞게 바꾸세요.
 export const NAV_ITEMS = [
   { to: '/', label: '홈', icon: 'house' },
-  { to: '/places', label: '오름·걷기길', icon: 'geo-alt' },
-  { to: '/heritage', label: '한라산·바다', icon: 'tree' },
+  { to: '/olle', label: '올레 코스', icon: 'signpost-split' },
+  { to: '/places', label: '주변 명소', icon: 'geo-alt' },
+  { to: '/heritage', label: '문화유산', icon: 'bank' },
   { to: '/agent', label: '걷기 도우미', icon: 'robot' },
-  { to: '/my', label: '내 탐험 수첩', icon: 'journal-bookmark' },
+  { to: '/my', label: '내 올레 수첩', icon: 'journal-bookmark' },
 ]
 
 export const router = createBrowserRouter([
@@ -26,6 +29,8 @@ export const router = createBrowserRouter([
     errorElement: <NotFound />,   // 없는 주소로 들어오면
     children: [
       { index: true, element: <Home /> },
+      { path: 'olle', element: <Olle /> },
+      { path: 'olle/:id', element: <OlleDetail /> },
       { path: 'places', element: <Places /> },
       { path: 'heritage', element: <Heritage /> },
       { path: 'agent', element: <Agent /> },

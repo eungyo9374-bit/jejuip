@@ -6,11 +6,11 @@ import { Empty, ErrorAlert, Loading } from '../components/Status'
 import { fetchPlaces } from '../api/client'
 import { useAppStore } from '../store/useAppStore'
 
-const TYPES = { 12: '관광지', 14: '문화시설', 15: '축제·행사' }
+const TYPES = { 12: '관광지', 14: '문화시설', 15: '축제·행사', 39: '음식점' }
 
 export default function Places() {
   const addFavorite = useAppStore((s) => s.addFavorite)   // STEP 5에서 사용
-  const [keyword, setKeyword] = useState('오름')
+  const [keyword, setKeyword] = useState('포구')
   const [type, setType] = useState('12')
   const [places, setPlaces] = useState([])               // ① 데이터
   const [loading, setLoading] = useState(true)           // ② 로딩
@@ -27,13 +27,13 @@ export default function Places() {
 
   return (
     <>
-      <PageHeader title="오름·걷기길" subtitle="한국관광공사 TourAPI" />
+      <PageHeader title="올레길 주변 명소" subtitle="한국관광공사 TourAPI — 걷다가 들를 만한 포구·해변·맛집을 찾아보세요" />
       <Form onSubmit={search} className="mb-4">
         <InputGroup>
           <Form.Select value={type} onChange={(e) => setType(e.target.value)} style={{ maxWidth: 140 }}>
             {Object.entries(TYPES).map(([v, label]) => <option key={v} value={v}>{label}</option>)}
           </Form.Select>
-          <Form.Control value={keyword} onChange={(e) => setKeyword(e.target.value)} placeholder="검색어" />
+          <Form.Control value={keyword} onChange={(e) => setKeyword(e.target.value)} placeholder="예: 포구, 해변, 카페, 광치기" />
           <Button type="submit"><i className="bi bi-search" /></Button>
         </InputGroup>
       </Form>

@@ -112,14 +112,15 @@ h1, h2, h3, h4, .serif { font-family: var(--jw-serif); font-weight: 400; letter-
 .heritage-row { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 1rem 0; border-bottom: 1px solid var(--jw-line); }
 
 /* 올레 지도 (일러스트풍 SVG) */
-.olle-svg-wrap { position: relative; background: #7cc6ee; border: 1px solid var(--jw-line); overflow: hidden; }
+.olle-svg-wrap { position: relative; background: #f6f1e6; border: 1px solid var(--jw-line); overflow: hidden; }
+.olle-svg-wrap::after { content: ''; position: absolute; inset: 0; pointer-events: none; mix-blend-mode: multiply; opacity: .55; background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20width%3D'240'%20height%3D'240'%3E%3Cfilter%20id%3D'n'%3E%3CfeTurbulence%20type%3D'fractalNoise'%20baseFrequency%3D'.85'%20numOctaves%3D'2'%20stitchTiles%3D'stitch'%2F%3E%3CfeColorMatrix%20values%3D'0%200%200%200%20.38%20%200%200%200%200%20.32%20%200%200%200%200%20.22%20%200%200%200%20.2%200'%2F%3E%3C%2Ffilter%3E%3Crect%20width%3D'100%25'%20height%3D'100%25'%20filter%3D'url(%23n)'%2F%3E%3C%2Fsvg%3E"); }
 .olle-svg { display: block; width: 100%; height: auto; aspect-ratio: 1110 / 860; user-select: none; }
-.map-label { font-family: 'Pretendard', sans-serif; font-weight: 700; fill: #2a5a1c; letter-spacing: .02em; pointer-events: none; font-size: 25px; paint-order: stroke; stroke: #fff; stroke-width: 6px; stroke-linejoin: round; }
-.map-label.strong { fill: #1f4a14; font-size: 26px; }
+.map-label { font-family: 'Gaegu', 'Pretendard', cursive; font-weight: 700; fill: #3d3b37; letter-spacing: .02em; pointer-events: none; font-size: 30px; paint-order: stroke; stroke: #f6f1e6; stroke-width: 7px; stroke-linejoin: round; }
+.map-label.strong { fill: #2f3d2a; font-size: 30px; }
 .map-badge-text { font-family: 'Pretendard', sans-serif; font-weight: 700; pointer-events: none; }
 .map-badge:focus { outline: none; }
 .map-badge:focus circle { stroke: #ff6a13; }
-.map-pin { font-size: 19px; font-weight: 700; fill: #2b2926; paint-order: stroke; stroke: #fff; stroke-width: 4px; font-family: 'Pretendard', sans-serif; }
+.map-pin { font-family: 'Gaegu', 'Pretendard', cursive; font-size: 22px; font-weight: 700; fill: #3d3b37; paint-order: stroke; stroke: #f6f1e6; stroke-width: 5px; }
 .map-reset { position: absolute; top: 12px; right: 12px; background: var(--jw-ink); color: #fff; border: 0; padding: .45rem .9rem; font-size: .8rem; }
 .map-chips { display: flex; flex-wrap: wrap; gap: .35rem; }
 .map-chips .chip { min-width: 2.6rem; padding: .2rem .5rem; }
@@ -136,3 +137,5 @@ h1, h2, h3, h4, .serif { font-family: var(--jw-serif); font-weight: 400; letter-
 @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 .fade-in { animation: fadeUp .9s ease both; }
 @media (prefers-reduced-motion: reduce) { .fade-in { animation: none; } }
+.map-callout { font-family: 'Gaegu', 'Pretendard', cursive; font-size: 30px; font-weight: 700; fill: #5d6a72; paint-order: stroke; stroke: #f6f1e6; stroke-width: 6px; stroke-linejoin: round; }
+.map-callout .num { fill: #2b8fd9; }

@@ -48,6 +48,7 @@ export default function OlleMap() {
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState(null)       // 선택한 코스 번호 (예: '7')
   const [hover, setHover] = useState(null)
+  const [moving, setMoving] = useState(false)
   const [vb, setVb] = useState({ x: 0, y: 0, w: W, h: H })
   const anim = useRef(0)
 
@@ -68,12 +69,14 @@ export default function OlleMap() {
   // 선택한 코스로 부드럽게 확대 / 전체 보기로 복귀
   function flyTo(target) {
     cancelAnimationFrame(anim.current)
+    setMoving(true)
     const from = vb, t0 = performance.now(), dur = 600
     const ease = (t) => 1 - (1 - t) ** 3
     const step = (now) => {
       const t = Math.min(1, (now - t0) / dur), e = ease(t)
       setVb({ x: from.x + (target.x - from.x) * e, y: from.y + (target.y - from.y) * e, w: from.w + (target.w - from.w) * e, h: from.h + (target.h - from.h) * e })
       if (t < 1) anim.current = requestAnimationFrame(step)
+      else setMoving(false)
     }
     anim.current = requestAnimationFrame(step)
   }
@@ -106,9 +109,9 @@ export default function OlleMap() {
               <svg className="olle-svg" viewBox={`${vb.x} ${vb.y} ${vb.w} ${vb.h}`} role="img" aria-label="제주 올레길 코스 지도">
                 <ArtDefs />
                 <rect x="-3000" y="-3000" width="7000" height="7000" fill="transparent" onClick={reset} />
-                <SeaArt mainPoly={mainPoly} pr={pr} rings={MAP.rings} pathD={pathD} />
-                <LandArt rings={MAP.rings} mainPoly={mainPoly} pr={pr} pathD={pathD} />
-                <Landmarks pr={pr} k={k} />
+                <SeaArt mainPoly={mainPoly} rings={MAP.rings} pathD={pathD} moving={moving} />
+                <LandArt rings={MAP.rings} mainPoly={mainPoly} pr={pr} pathD={pathD} moving={moving} />
+                <Landmarks pr={pr} k={k} moving={moving} />
 
                 {/* 지역 이름 */}
                 {LABELS.map(([t, lng, lat]) => { const [x, y] = pr([lng, lat]); return <text key={t} x={x} y={y} textAnchor="middle" className="map-label" style={{ fontSize: 25 * Math.max(k, 0.55), opacity: selected ? 0.55 : 1 }}>{t}</text> })}
@@ -120,8 +123,8 @@ export default function OlleMap() {
                   const d = pathD(g.route.pts, g.route.type === 'loop')
                   return (
                     <g key={g.key} opacity={dim ? 0.28 : 1} onMouseEnter={() => setHover(g.key)} onMouseLeave={() => setHover(null)} onClick={() => select(g.key)} style={{ cursor: 'pointer' }}>
-                      <path d={d} fill="none" stroke="#fff" strokeWidth={on ? 15 : 12} strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
-                      <path d={d} fill="none" stroke={on ? '#ff4a00' : hover === g.key ? '#0b3fb8' : '#1d5be0'} strokeWidth={on ? 8 : 6} strokeLinecap="round" strokeLinejoin="round"
+                      <path d={d} fill="none" stroke="#f6f1e6" strokeWidth={on ? 15 : 12} strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+                      <path d={d} fill="none" stroke={on ? '#e4572e' : hover === g.key ? '#1668b0' : '#2b8fd9'} strokeWidth={on ? 8 : 6} strokeLinecap="round" strokeLinejoin="round"
                         strokeDasharray={g.route.type === 'line' ? '2 9' : undefined} vectorEffect="non-scaling-stroke" />
                       <path d={d} fill="none" stroke="transparent" strokeWidth="22" vectorEffect="non-scaling-stroke" />
                     </g>
@@ -139,6 +142,25 @@ export default function OlleMap() {
                   )
                 })()}
 
+                {/* 설명선: 선택하거나 마우스를 올린 코스 */}
+                {(() => {
+                  const g = groups.find((x) => x.key === (selected ?? hover))
+                  if (!g) return null
+                  const [cx, cy] = pr([126.55, 33.38]), [bx, by] = g.mid
+                  let dx = bx - cx, dy = by - cy
+                  const len = Math.hypot(dx, dy) || 1
+                  dx /= len; dy /= len
+                  const ex = bx + dx * 120 * k, ey = by + dy * 120 * k, right = dx >= 0
+                  return (
+                    <g style={{ pointerEvents: 'none' }}>
+                      <line x1={bx} y1={by} x2={ex} y2={ey} stroke="#7d8f99" strokeWidth="1.8" strokeDasharray="4 5" vectorEffect="non-scaling-stroke" />
+                      <g transform={`translate(${ex} ${ey}) scale(${k})`}>
+                        <text x={right ? 8 : -8} y="8" textAnchor={right ? 'start' : 'end'} className="map-callout"><tspan className="num">{g.c.course}</tspan> {g.c.name.replace(/\([AB]\)/, '')}</text>
+                      </g>
+                    </g>
+                  )
+                })()}
+
                 {/* 코스 번호 배지 */}
                 {groups.map((g) => {
                   const on = g.key === selected, dim = selected && !on
@@ -147,8 +169,8 @@ export default function OlleMap() {
                       onClick={() => select(g.key)} onKeyDown={(e) => e.key === 'Enter' && select(g.key)}
                       onMouseEnter={() => setHover(g.key)} onMouseLeave={() => setHover(null)} style={{ cursor: 'pointer' }}>
                       <title>{`${g.c.course} ${g.c.name.replace(/\([AB]\)/, '')} · ${g.c.distance}`}</title>
-                      <circle r={on ? 29 : 23} fill={on ? '#ff4a00' : '#fff'} stroke={on ? '#fff' : '#1d5be0'} strokeWidth="5" />
-                      <text y="7" textAnchor="middle" className="map-badge-text" fill={on ? '#fff' : '#0e2a5c'} style={{ fontSize: g.key.length > 2 ? 15 : 22 }}>{g.key}</text>
+                      <circle r={on ? 29 : 23} fill={on ? '#e4572e' : '#fffdf8'} stroke={on ? '#fffdf8' : '#2b8fd9'} strokeWidth="5" />
+                      <text y="7" textAnchor="middle" className="map-badge-text" fill={on ? '#fff' : '#3d3b37'} style={{ fontSize: g.key.length > 2 ? 15 : 22 }}>{g.key}</text>
                     </g>
                   )
                 })}

@@ -2,8 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Line, OrbitControls } from '@react-three/drei'
 import * as THREE from 'three'
-import { CATEGORIES, PIN_SCALE, pinGeometry } from '../lib/pinModels'
-import { DEEP_SEA, LAND_RINGS, SEABED_Y, buildTerrain, fromXZ, heightAt, paperTexture, puffTexture, terrainMaterial, toXZ, waveTexture } from '../lib/terrain'
+import { CATEGORIES, PIN_SCALE, pinGeometry, vehicleGeometry } from '../lib/pinModels'
+import { DEEP_SEA, LAND_RINGS, SEABED_Y, buildTerrain, fromXZ, heightAt, seaDistAt, paperTexture, puffTexture, terrainMaterial, toXZ, waveTexture } from '../lib/terrain'
 
 const SMALL = typeof window !== 'undefined' && window.innerWidth < 700   // 휴대폰이면 입자·그림자를 줄여요
 const C = (h) => new THREE.Color(h)
@@ -163,6 +163,149 @@ function Focus({ pin, selected }) {
       <Tag text={pin.title} kind="label" position={[0, peak ? 0.45 : 0.85, 0]} />
     </group>
   )
+}
+
+// ── 바다의 배: 섬과 섬을 오가는 여객선 + 바다 위에 떠 있는 고깃배 ──
+const HALF_PI = Math.PI / 2
+const WAKE_MAT = new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.5, depthWrite: false, side: THREE.DoubleSide })
+const WAKE_GEO = (() => {
+  const g = new THREE.ShapeGeometry(new THREE.Shape([new THREE.Vector2(0, 0), new THREE.Vector2(-0.07, -0.5), new THREE.Vector2(0.07, -0.5)]))
+  g.rotateX(HALF_PI)                  // 바다 위에 눕혀 배 뒤(-z)로 퍼지는 물살
+  return g
+})()
+// 항구 ↔ 섬 (대략적인 뱃길)
+const FERRIES = [
+  { a: [126.934, 33.47], b: [126.951, 33.495], wait: 3 },     // 성산항 ↔ 우도
+  { a: [126.27, 33.208], b: [126.272, 33.176], wait: 4 },     // 운진항 ↔ 가파도
+  { a: [126.262, 33.208], b: [126.268, 33.128], wait: 5 },    // 운진항 ↔ 마라도
+  { a: [126.545, 33.526], b: [126.57, 33.66], wait: 6 },      // 제주항 → 먼바다
+]
+function Boats() {
+  const ferries = useRef([]), fishers = useRef([])
+  // 고깃배 자리: 해안에서 0.6~2.2km 떨어진 바다에서 고르게 뽑아요
+  const spots = useMemo(() => {
+    const out = []
+    for (let k = 0; k < 400 && out.length < (SMALL ? 9 : 14); k++) {
+      const lng = 126.12 + Math.random() * 0.86, lat = 33.12 + Math.random() * 0.48, d = seaDistAt(lng, lat)
+      if (d > 600 && d < 2200 && out.every((o) => Math.hypot(o.lng - lng, o.lat - lat) > 0.05)) out.push({ lng, lat, p: Math.random() * 6.28, red: Math.random() < 0.4 })
+    }
+    return out
+  }, [])
+  const routes = useMemo(() => FERRIES.map((f) => {
+    const [ax, az] = toXZ(...f.a), [bx, bz] = toXZ(...f.b)
+    const len = Math.hypot(bx - ax, bz - az)
+    return { ax, az, bx, bz, len, go: len / 0.12, wait: f.wait }
+  }), [])
+  useFrame(({ clock }) => {
+    const t = clock.elapsedTime
+    routes.forEach((r, i) => {
+      const g = ferries.current[i]
+      if (!g) return
+      const cycle = 2 * (r.go + r.wait), u = (t + i * 7) % cycle
+      // 가는 길 → 기다림 → 돌아오는 길 → 기다림
+      let k, dir
+      if (u < r.go) { k = u / r.go; dir = 1 } else if (u < r.go + r.wait) { k = 1; dir = 0 } else if (u < 2 * r.go + r.wait) { k = 1 - (u - r.go - r.wait) / r.go; dir = -1 } else { k = 0; dir = 0 }
+      const e = k * k * (3 - 2 * k)       // 출발·도착 때 천천히
+      g.position.set(r.ax + (r.bx - r.ax) * e, 0.008 + Math.sin(t * 1.4 + i) * 0.004, r.az + (r.bz - r.az) * e)
+      if (dir) g.rotation.y = Math.atan2((r.bx - r.ax) * dir, (r.bz - r.az) * dir)
+      g.children[1].visible = dir !== 0 && k > 0.03 && k < 0.97
+    })
+    spots.forEach((s, i) => {
+      const g = fishers.current[i]
+      if (!g) return
+      const a = t * 0.04 + s.p, [x, z] = toXZ(s.lng, s.lat)
+      g.position.set(x + Math.cos(a) * 0.18, 0.006 + Math.sin(t * 1.3 + s.p) * 0.006, z + Math.sin(a) * 0.18)
+      g.rotation.set(0, -a, Math.sin(t * 1.1 + s.p) * 0.07)
+    })
+  })
+  return (
+    <>
+      {routes.map((r, i) => (
+        <group key={`f${i}`} ref={(g) => { ferries.current[i] = g }} scale={1.6}>
+          <mesh geometry={vehicleGeometry('ferry')} material={PIN_MAT} castShadow />
+          <mesh geometry={WAKE_GEO} material={WAKE_MAT} position={[0, 0.002, -0.14]} />
+        </group>
+      ))}
+      {spots.map((s, i) => (
+        <group key={`b${i}`} ref={(g) => { fishers.current[i] = g }} scale={1.3}>
+          <mesh geometry={vehicleGeometry(s.red ? 'fishing-red' : 'fishing')} material={PIN_MAT} castShadow />
+        </group>
+      ))}
+    </>
+  )
+}
+
+// ── 하늘의 비행기: 제주국제공항에 내리고 뜨는 여객기 + 높이 지나가는 비행기 ──
+const AIRPORT = [126.493, 33.5113]
+const RWY = (() => {
+  const [cx, cz] = toXZ(...AIRPORT)
+  const h = (64 * Math.PI) / 180                       // 활주로 방향(진북 기준 약 64°)
+  const dir = new THREE.Vector3(Math.sin(h), 0, -Math.cos(h))
+  const y = Math.max(...[-1, 0, 1].map((k) => heightAt(...fromXZ(cx + dir.x * 0.43 * k, cz + dir.z * 0.43 * k)))) + 0.012
+  return { c: new THREE.Vector3(cx, y, cz), dir, half: 0.43, y, rot: Math.atan2(dir.x, dir.z) }
+})()
+function Runway() {
+  return (
+    <group position={RWY.c} rotation={[0, RWY.rot, 0]}>
+      <mesh receiveShadow><boxGeometry args={[0.05, 0.006, RWY.half * 2]} /><meshStandardMaterial color="#5a5752" roughness={0.9} /></mesh>
+      {Array.from({ length: 13 }, (_, i) => (
+        <mesh key={i} position={[0, 0.0035, -RWY.half + 0.08 + i * 0.058]}><boxGeometry args={[0.003, 0.001, 0.028]} /><meshBasicMaterial color="#f4f1ea" /></mesh>
+      ))}
+      {[-1, 1].map((s) => <mesh key={s} position={[0, 0.0035, s * (RWY.half - 0.02)]}><boxGeometry args={[0.036, 0.001, 0.012]} /><meshBasicMaterial color="#f4f1ea" /></mesh>)}
+    </group>
+  )
+}
+const at = (k, y) => new THREE.Vector3(RWY.c.x + RWY.dir.x * k, y, RWY.c.z + RWY.dir.z * k)
+// 시간에 따른 경로: [시각(초), 위치] 점들을 이어서 움직여요 (마지막 점 뒤로는 잠시 쉬었다 다시)
+const FLIGHTS = [
+  // 착륙: 동북동 바다 쪽에서 내려와 활주로에 닿고 감속
+  { cycle: 34, offset: 0, keys: [[0, at(8, 2.4)], [20, at(RWY.half, RWY.y + 0.035)], [24, at(-0.1, RWY.y + 0.03)], [26, at(-0.18, RWY.y + 0.03)]] },
+  // 이륙: 활주로 끝에서 달려 떠올라 서남서로 올라감
+  { cycle: 34, offset: 17, keys: [[0, at(RWY.half - 0.02, RWY.y + 0.03)], [5, at(-0.2, RWY.y + 0.06)], [18, at(-7, 2.6)], [24, at(-11, 3.4)]] },
+  // 높은 하늘을 가로지르는 비행기 (비행운)
+  { cycle: 46, offset: 9, trail: true, keys: [[0, new THREE.Vector3(-24, 3.8, 9)], [40, new THREE.Vector3(24, 3.8, -11)]] },
+]
+function flightPos(f, t, out) {
+  const u = (t + f.offset) % f.cycle, k = f.keys, end = k[k.length - 1][0]
+  if (u > end) return -1
+  let i = 1; while (i < k.length - 1 && k[i][0] < u) i++
+  const [t0, p0] = k[i - 1], [t1, p1] = k[i], s = Math.min(1, (u - t0) / (t1 - t0 || 1))
+  out.copy(p0).lerp(p1, s)
+  return Math.min(1, u / 1.2, (end - u) / 1.2)          // 처음·끝에서 서서히 나타났다 사라짐
+}
+const LIGHT_RED = new THREE.MeshBasicMaterial({ color: '#ff3b30' })
+const LIGHT_GREEN = new THREE.MeshBasicMaterial({ color: '#34c759' })
+const LIGHT_WHITE = new THREE.MeshBasicMaterial({ color: '#ffffff' })
+const TRAIL_MAT = new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.45, depthWrite: false })
+function Planes() {
+  const refs = useRef([]), strobes = useRef([])
+  const tmp = useMemo(() => ({ p: new THREE.Vector3(), q: new THREE.Vector3() }), [])
+  useFrame(({ clock }) => {
+    const t = clock.elapsedTime
+    FLIGHTS.forEach((f, i) => {
+      const g = refs.current[i]
+      if (!g) return
+      const v = flightPos(f, t, tmp.p)
+      if (v < 0) { g.visible = false; return }
+      g.visible = true
+      flightPos(f, t + 0.1, tmp.q)
+      g.position.copy(tmp.p)
+      if (tmp.q.distanceToSquared(tmp.p) > 1e-8) g.lookAt(tmp.q)
+      g.scale.setScalar(1.4 * Math.max(0.001, v))
+      if (strobes.current[i]) strobes.current[i].visible = t % 1.2 < 0.1
+    })
+  })
+  return FLIGHTS.map((f, i) => (
+    <group key={i} ref={(g) => { refs.current[i] = g }} visible={false}>
+      <mesh geometry={vehicleGeometry('plane')} material={PIN_MAT} castShadow />
+      <mesh position={[0.222, -0.012, -0.09]} material={LIGHT_RED}><sphereGeometry args={[0.007, 8, 6]} /></mesh>
+      <mesh position={[-0.222, -0.012, -0.09]} material={LIGHT_GREEN}><sphereGeometry args={[0.007, 8, 6]} /></mesh>
+      <mesh ref={(m) => { strobes.current[i] = m }} position={[0, 0.115, -0.22]} material={LIGHT_WHITE}><sphereGeometry args={[0.008, 8, 6]} /></mesh>
+      {f.trail && [-0.085, 0.085].map((x) => (
+        <mesh key={x} position={[x, -0.03, -1.6]} rotation={[HALF_PI, 0, 0]} material={TRAIL_MAT}><cylinderGeometry args={[0.012, 0.004, 2.8, 8]} /></mesh>
+      ))}
+    </group>
+  ))
 }
 
 // ── 구름: 솜뭉치 여러 개를 모은 덩어리. 날씨에 따라 개수·색·짙기가 바뀌어요 ──
@@ -388,6 +531,9 @@ function Scene({ layers, regions, hoverPin, selectedPin, onHover, onSelect, onTe
       <Regions regions={regions} />
       {layers.map((l) => <PinLayer key={l.cat} cat={l.cat} items={l.items} onHover={onHover} onSelect={onSelect} />)}
       <Focus pin={selectedPin ?? hoverPin} selected={!!selectedPin} />
+      <Boats />
+      <Runway />
+      <Planes />
       <Clouds fx={fx} />
       <Rain fx={fx} on={mode === 'rain'} />
       <Snow fx={fx} on={mode === 'snow'} />

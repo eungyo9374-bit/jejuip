@@ -31,6 +31,14 @@ function sample(arr, lng, lat) {
 // 땅 위 높이(바다면 0) — 코스 선·핀을 땅에 붙일 때 써요
 export const heightAt = (lng, lat) => Math.max(sample(Y, lng, lat), 0)
 
+// 해안에서 떨어진 거리(m) — 땅이면 0 (배를 띄울 자리 고를 때 써요)
+export function seaDistAt(lng, lat) {
+  const i = Math.round((lng - T.lng0) / T.dLng), j = Math.round((lat - T.lat0) / T.dLat)
+  if (i < 0 || j < 0 || i >= T.nx || j >= T.ny) return 3000
+  const v = T.v[j * T.nx + i]
+  return v >= 0 ? 0 : -v * 10
+}
+
 // 땅 색: 바닷가 모래 → 들판 → 숲 → 관목 → 바위 (수채화 느낌의 따뜻한 톤)
 const hex = (h) => { const c = new THREE.Color(h); return [c.r, c.g, c.b] }
 const LAND = [[0, '#eadcb6'], [12, '#e2e2b8'], [150, '#d0dca2'], [400, '#afc485'], [800, '#8fae72'], [1150, '#9a9f74'], [1450, '#bcab88'], [1800, '#d9cdbb']].map(([m, h]) => [m, hex(h)])

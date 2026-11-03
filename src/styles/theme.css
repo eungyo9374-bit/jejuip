@@ -175,3 +175,4 @@ h1, h2, h3, h4, .serif { font-family: var(--jw-serif); font-weight: 400; letter-
 .m3d-pins { list-style: none; padding: 0; margin: .4rem 0 0; max-height: 240px; overflow: auto; }
 .m3d-pins button { background: none; border: 0; padding: .2rem 0; font-size: .82rem; color: var(--jw-ink); text-align: left; cursor: pointer; }
 .m3d-pins button.on { font-weight: 700; }
+.m3d-photo { display: block; width: 100%; max-height: 170px; object-fit: cover; margin: .5rem 0; }

@@ -44,3 +44,7 @@ export const askAgent = (message, history) => post('/api/agent', { message, hist
 
 // 올레 코스 현황 (제주특별자치도_올레코스현황)
 export const fetchOlle = (keyword = '') => get(`/api/olle?keyword=${encodeURIComponent(keyword)}`)
+
+// 3D 지도: 제주 전체 관광지·문화유산 (좌표가 있는 것)
+export const fetchTourAll = (type = '12') => get(`/api/tour?all=1&type=${type}`)
+export const fetchHeritageAll = () => get('/api/heritage?all=1')

@@ -27,19 +27,24 @@ const tagCache = new Map()
 function tagTexture(text, kind) {
   const key = kind + text
   if (tagCache.has(key)) return tagCache.get(key)
-  const S = 2, badge = kind !== 'label'
-  const font = `${badge ? 'bold 15px' : '14px'} Pretendard, "Malgun Gothic", sans-serif`
+  const S = 2, badge = kind !== 'label' && kind !== 'region'
+  const font = `${badge ? 'bold 15px' : kind === 'region' ? 'bold 17px' : '14px'} Pretendard, "Malgun Gothic", sans-serif`
   const c = document.createElement('canvas'), g = c.getContext('2d')
   g.font = font
   const tw = g.measureText(text).width
-  const w = Math.ceil(badge ? Math.max(34, tw + 16) : tw + 20), h = badge ? 34 : 28
+  const w = Math.ceil(kind === 'region' ? tw + 12 : badge ? Math.max(34, tw + 16) : tw + 20), h = badge ? 34 : kind === 'region' ? 26 : 28
   c.width = w * S; c.height = h * S
   g.scale(S, S); g.font = font; g.textAlign = 'center'; g.textBaseline = 'middle'
-  g.beginPath(); g.roundRect(1.5, 1.5, w - 3, h - 3, badge ? h / 2 : 3)
-  g.fillStyle = kind === 'on' ? '#e4572e' : badge ? '#fffdf8' : '#2b2926'; g.fill()
-  if (badge) { g.lineWidth = 3; g.strokeStyle = kind === 'on' ? '#fffdf8' : '#2b8fd9'; g.stroke() }
-  g.fillStyle = kind === 'on' || !badge ? '#ffffff' : '#3d3b37'
-  g.fillText(text, w / 2, h / 2 + 1)
+  if (kind === 'region') {
+    g.lineWidth = 4; g.lineJoin = 'round'; g.strokeStyle = 'rgba(255,250,240,0.9)'; g.strokeText(text, w / 2, h / 2 + 1)
+    g.fillStyle = '#4a4743'; g.fillText(text, w / 2, h / 2 + 1)
+  } else {
+    g.beginPath(); g.roundRect(1.5, 1.5, w - 3, h - 3, badge ? h / 2 : 3)
+    g.fillStyle = kind === 'on' ? '#e4572e' : badge ? '#fffdf8' : '#2b2926'; g.fill()
+    if (badge) { g.lineWidth = 3; g.strokeStyle = kind === 'on' ? '#fffdf8' : '#2b8fd9'; g.stroke() }
+    g.fillStyle = kind === 'on' || !badge ? '#ffffff' : '#3d3b37'
+    g.fillText(text, w / 2, h / 2 + 1)
+  }
   const map = new THREE.CanvasTexture(c)
   map.colorSpace = THREE.SRGBColorSpace
   const v = { map, aspect: w / h }
@@ -56,18 +61,6 @@ function Tag({ text, kind, position, height = 0.05, opacity = 1, onClick }) {
 }
 
 const ptsOf = (pts, y) => pts.map(([lng, lat]) => { const [x, z] = toXZ(lng, lat); return [x, y ?? heightAt(lng, lat) + 0.05, z] })
-// 점 사이를 촘촘히 채워 선이 언덕을 파고들지 않게
-function densify(part, step = 0.0012) {
-  const out = []
-  for (let i = 0; i < part.length - 1; i++) {
-    const [a, b] = [part[i], part[i + 1]]
-    const n = Math.max(1, Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / step))
-    for (let k = 0; k < n; k++) out.push([a[0] + ((b[0] - a[0]) * k) / n, a[1] + ((b[1] - a[1]) * k) / n])
-  }
-  out.push(part[part.length - 1])
-  return out
-}
-
 // ── 하늘: 위는 날씨 색, 아래는 안개와 같은 색으로 번지는 둥근 천장 ──
 const skyShader = {
   uniforms: { top: { value: new THREE.Color() }, horizon: { value: new THREE.Color() } },
@@ -103,54 +96,75 @@ function Land({ fx }) {
   )
 }
 
-// ── 코스 선: 흰 테두리 + 색 선. 선택한 코스 위에는 걷는 점이 움직여요 ──
-function Routes({ groups, selected, onSelect }) {
-  const lines = useMemo(() => groups.map((g) => ({ g, parts: g.route.parts.map((p) => ptsOf(densify(p))) })), [groups])
-  return lines.map(({ g, parts }) => {
-    const on = g.key === selected, dim = selected && !on
-    return (
-      <group key={g.key}>
-        {parts.map((p, i) => <Line key={`h${i}`} points={p} color="#fffaf0" lineWidth={on ? 11 : 7} transparent opacity={dim ? 0.3 : 0.95} />)}
-        {parts.map((p, i) => (
-          <Line key={i} points={p} color={on ? '#e4572e' : '#2b8fd9'} lineWidth={on ? 5.5 : 3.5} transparent opacity={dim ? 0.35 : 1}
-            dashed={g.route.type === 'line'} dashSize={0.12} gapSize={0.1} />
-        ))}
-        {on && <Walker points={parts.reduce((a, b) => (b.length > a.length ? b : a))} />}
-        <Tag text={g.key} kind={on ? 'on' : 'badge'} position={[g.mid[0], g.mid[1] + 0.32, g.mid[2]]} opacity={dim ? 0.55 : 1} onClick={() => onSelect(g.key)} />
-      </group>
-    )
+// ── 지역 이름: 글자만 보이는 지도 라벨 ──
+function Regions({ regions }) {
+  return regions.map((r) => {
+    const [x, z] = toXZ(r.lng, r.lat)
+    return <Tag key={r.name} text={r.name} kind="region" position={[x, heightAt(r.lng, r.lat) + 0.12, z]} height={0.034} />
   })
-}
-function Walker({ points }) {
-  const ref = useRef()
-  const lens = useMemo(() => { const l = [0]; for (let i = 1; i < points.length; i++) l.push(l[i - 1] + Math.hypot(points[i][0] - points[i - 1][0], points[i][2] - points[i - 1][2])); return l }, [points])
-  useFrame(({ clock }) => {
-    if (!ref.current) return
-    const total = lens[lens.length - 1] || 1
-    const d = (clock.elapsedTime * 0.35) % total
-    let i = 1; while (i < lens.length - 1 && lens[i] < d) i++
-    const t = (d - lens[i - 1]) / ((lens[i] - lens[i - 1]) || 1), a = points[i - 1], b = points[i]
-    ref.current.position.set(a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t + 0.06, a[2] + (b[2] - a[2]) * t)
-  })
-  return <mesh ref={ref} castShadow><sphereGeometry args={[0.06, 16, 12]} /><meshStandardMaterial color="#fffdf8" emissive="#e4572e" emissiveIntensity={0.6} /></mesh>
 }
 
-// ── 명소·문화유산 핀 ──
-function Pins({ pins, active, onActive }) {
-  return pins.map((p) => {
-    const [x, z] = toXZ(p.lng, p.lat), y = heightAt(p.lng, p.lat)
-    const on = active === p.id, heritage = p.kind === 'heritage'
-    return (
-      <group key={p.id} position={[x, y, z]}>
-        <mesh position={[0, 0.2, 0]} castShadow><cylinderGeometry args={[0.012, 0.012, 0.4, 6]} /><meshStandardMaterial color="#4a4743" /></mesh>
-        <mesh position={[0, 0.46, 0]} scale={on ? 1.5 : 1} castShadow onPointerOver={(e) => { e.stopPropagation(); onActive(p.id) }} onPointerOut={() => onActive(null)} onClick={(e) => { e.stopPropagation(); onActive(p.id) }}>
-          {heritage ? <octahedronGeometry args={[0.1]} /> : <sphereGeometry args={[0.09, 16, 12]} />}
-          <meshStandardMaterial color={heritage ? '#7b5ea7' : '#f2a93b'} roughness={0.5} />
-        </mesh>
-        {on && <Tag text={p.title} kind="label" position={[0, 0.8, 0]} />}
-      </group>
-    )
+// ── 명소·문화유산 핀: 한 종류를 한 번에 그려요 (수백 개여도 가벼워요) ──
+const PIN = { tour: { color: '#f2a93b', head: 0.075 }, heritage: { color: '#7b5ea7', head: 0.085 } }
+function PinLayer({ items, kind, onHover, onSelect }) {
+  const heads = useRef(), sticks = useRef()
+  const n = items.length
+  useEffect(() => {
+    if (!heads.current) return
+    const m = new THREE.Matrix4(), q = new THREE.Quaternion(), one = new THREE.Vector3(1, 1, 1), p = new THREE.Vector3()
+    items.forEach((it, i) => {
+      const [x, z] = toXZ(it.lng, it.lat), y = heightAt(it.lng, it.lat)
+      heads.current.setMatrixAt(i, m.compose(p.set(x, y + 0.3, z), q, one))
+      sticks.current.setMatrixAt(i, m.compose(p.set(x, y + 0.14, z), q, one))
+    })
+    heads.current.instanceMatrix.needsUpdate = true
+    sticks.current.instanceMatrix.needsUpdate = true
+    heads.current.computeBoundingSphere(); heads.current.computeBoundingBox()
+  }, [items])
+  if (!n) return null
+  const c = PIN[kind]
+  return (
+    <group key={kind + n}>
+      <instancedMesh ref={sticks} args={[null, null, n]} frustumCulled={false}>
+        <cylinderGeometry args={[0.008, 0.008, 0.28, 5]} /><meshStandardMaterial color="#4a4743" />
+      </instancedMesh>
+      <instancedMesh ref={heads} args={[null, null, n]} frustumCulled={false} castShadow
+        onPointerMove={(e) => { e.stopPropagation(); onHover(items[e.instanceId]?.id ?? null) }}
+        onPointerOut={() => onHover(null)}
+        onClick={(e) => { e.stopPropagation(); const it = items[e.instanceId]; if (it) onSelect(it.id) }}>
+        {kind === 'heritage' ? <octahedronGeometry args={[c.head]} /> : <sphereGeometry args={[c.head, 14, 10]} />}
+        <meshStandardMaterial color={c.color} roughness={0.5} />
+      </instancedMesh>
+    </group>
+  )
+}
+
+// 선택·가리킨 핀: 크게 강조하고 이름표를 붙여요 (선택한 핀에는 물결이 퍼져요)
+function Focus({ pin, selected }) {
+  const ring = useRef()
+  useFrame(({ clock }) => {
+    if (!ring.current) return
+    const t = (clock.elapsedTime * 0.8) % 1
+    ring.current.scale.setScalar(0.5 + t * 2.2)
+    ring.current.material.opacity = (1 - t) * 0.8
   })
+  if (!pin) return null
+  const [x, z] = toXZ(pin.lng, pin.lat), y = heightAt(pin.lng, pin.lat)
+  const heritage = pin.kind === 'heritage'
+  return (
+    <group position={[x, y, z]}>
+      <mesh position={[0, 0.3, 0]} scale={1.8} renderOrder={5}>
+        {heritage ? <octahedronGeometry args={[0.085]} /> : <sphereGeometry args={[0.075, 16, 12]} />}
+        <meshStandardMaterial color={PIN[pin.kind].color} emissive={PIN[pin.kind].color} emissiveIntensity={0.5} />
+      </mesh>
+      {selected && (
+        <mesh ref={ring} position={[0, 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[0.2, 0.25, 32]} /><meshBasicMaterial color={PIN[pin.kind].color} transparent depthWrite={false} />
+        </mesh>
+      )}
+      <Tag text={pin.title} kind="label" position={[0, 0.72, 0]} />
+    </group>
+  )
 }
 
 // ── 구름: 솜뭉치 여러 개를 모은 덩어리. 날씨에 따라 개수·색·짙기가 바뀌어요 ──
@@ -350,7 +364,7 @@ function makeFx(mode) {
   }
 }
 
-function Scene({ groups, selected, onSelect, pins, activePin, onActivePin, view, mode }) {
+function Scene({ layers, regions, hoverPin, selectedPin, onHover, onSelect, view, mode }) {
   const [fx] = useState(() => makeFx(mode))
   useEffect(() => { fx.mode = MODES[mode] ? mode : 'clear' }, [fx, mode])
   const sky = useRef(), sun = useRef(), hemi = useRef(), skyMesh = useRef()
@@ -358,7 +372,7 @@ function Scene({ groups, selected, onSelect, pins, activePin, onActivePin, view,
   useFrame(() => { if (skyMesh.current) skyMesh.current.position.copy(camera.position) })
   const [moving, setMoving] = useState(true)
   const [touchedView, setTouchedView] = useState(null)
-  const spin = !selected && !moving && touchedView !== view     // 전체 보기에서는 천천히 회전
+  const spin = !selectedPin && !moving && touchedView !== view     // 전체 보기에서는 천천히 회전
 
   return (
     <>
@@ -373,8 +387,9 @@ function Scene({ groups, selected, onSelect, pins, activePin, onActivePin, view,
         shadow-camera-left={-17} shadow-camera-right={17} shadow-camera-top={13} shadow-camera-bottom={-13} shadow-camera-near={1} shadow-camera-far={45} />
       <Atmosphere fx={fx} sky={sky} sun={sun} hemi={hemi} />
       <Land fx={fx} />
-      <Routes groups={groups} selected={selected} onSelect={onSelect} />
-      <Pins pins={pins} active={activePin} onActive={onActivePin} />
+      <Regions regions={regions} />
+      {layers.map((l) => <PinLayer key={l.kind} kind={l.kind} items={l.items} onHover={onHover} onSelect={onSelect} />)}
+      <Focus pin={selectedPin ?? hoverPin} selected={!!selectedPin} />
       <Clouds fx={fx} />
       <Rain fx={fx} on={mode === 'rain'} />
       <Snow fx={fx} on={mode === 'snow'} />

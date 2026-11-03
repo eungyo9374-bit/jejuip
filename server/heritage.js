@@ -37,3 +37,11 @@ export async function searchHeritageNear({ lat, lng, radius = 8000, rows = 8 } =
     .sort((a, b) => a.dist - b.dist)
     .slice(0, rows);
 }
+
+// 제주 국가유산 전체 중 좌표가 있는 것 (3D 지도용)
+export async function listHeritageAll() {
+  if (!all.list || Date.now() - all.at > 3600e3) {
+    all = { at: Date.now(), list: await searchHeritage({ rows: 3000 }) };
+  }
+  return all.list.filter((h) => Number(h.lat) > 0 && Number(h.lng) > 0);
+}

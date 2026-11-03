@@ -166,3 +166,12 @@ h1, h2, h3, h4, .serif { font-family: var(--jw-serif); font-weight: 400; letter-
 .link-danger-soft:hover { color: #c0392b; border-color: #c0392b; }
 
 .chat-box .msg { white-space: pre-wrap; }
+
+/* 3D 올레 지도 */
+.m3d-wrap { position: relative; height: min(66vh, 600px); min-height: 380px; background: #f6f1e6; border: 1px solid var(--jw-line); overflow: hidden; touch-action: none; }
+.m3d-fallback { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: var(--jw-ink); padding: 1rem; }
+.m3d-weather { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin-top: .6rem; }
+.m3d-dot { display: inline-block; width: .6rem; height: .6rem; border-radius: 50%; margin-right: .4rem; }
+.m3d-pins { list-style: none; padding: 0; margin: .4rem 0 0; max-height: 240px; overflow: auto; }
+.m3d-pins button { background: none; border: 0; padding: .2rem 0; font-size: .82rem; color: var(--jw-ink); text-align: left; cursor: pointer; }
+.m3d-pins button.on { font-weight: 700; }

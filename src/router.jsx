@@ -15,6 +15,7 @@ export const NAV_ITEMS = [
   { to: '/', label: '홈', icon: 'house' },
   { to: '/map', label: '올레 지도', icon: 'map' },
   { to: '/olle', label: '올레 코스', icon: 'signpost-split' },
+  { to: '/3d', label: '3D 지도', icon: 'badge-3d' },
   { to: '/agent', label: '걷기 도우미', icon: 'robot' },
   { to: '/my', label: '내 올레 수첩', icon: 'journal-bookmark' },
 ]
@@ -28,6 +29,7 @@ export const router = createBrowserRouter([
       { index: true, element: <Home /> },
       { path: 'map', element: <OlleMap /> },
       { path: 'olle', element: <Olle /> },
+      { path: '3d', lazy: async () => ({ Component: (await import('./pages/Map3D')).default }) },   // 3D 는 무거워서 열 때만 불러와요
       { path: 'olle/:id', element: <OlleDetail /> },
       { path: 'agent', element: <Agent /> },
       { path: 'my', element: <My /> },

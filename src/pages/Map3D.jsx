@@ -10,6 +10,9 @@ import { heightAt, toXZ } from '../lib/terrain'
 import { CATEGORIES, categorize } from '../lib/pinModels'
 import { useAppStore } from '../store/useAppStore'
 
+// 한라산은 핀 여러 개 대신 지형 자체를 눌러서 봐요 (그 위의 핀은 뺐어요)
+const HALLA = /한라산|백록담|선작지왓|영실/
+const HALLA_PIN = { id: 'hallasan', kind: 'tour', cat: 'mountain', terrain: true, title: '한라산', sub: '제주도 한가운데 솟은 대한민국 최고봉 · 해발 1,947m · 정상에 화구호 백록담', desc: '한라산국립공원이자 천연보호구역이고, 제주 화산섬과 용암동굴의 일부로 유네스코 세계자연유산에 올라 있어요. 아래쪽은 오름과 곶자왈, 중턱은 숲, 꼭대기는 관목과 바위로 풍경이 달라져요.', srcId: '한라산', lat: 33.3617, lng: 126.5292 }
 const PREVIEWS = [['auto', '오늘 날씨'], ['clear', '맑음'], ['cloudy', '흐림'], ['rain', '비'], ['snow', '눈']]
 // 지역 이름과 위치 (지도에 글자로 보이고, 누르면 그쪽으로 날아가요)
 const REGIONS = [
@@ -59,6 +62,7 @@ function viewAt(lng, lat, dist) {
 export default function Map3D() {
   const [tour, setTour] = useState([])
   const [heritage, setHeritage] = useState([])
+  const [hallaImage, setHallaImage] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
   const [off, setOff] = useState(() => new Set())     // 꺼 둔 종류
@@ -75,9 +79,10 @@ export default function Map3D() {
   useEffect(() => {
     Promise.allSettled([fetchTourAll('12'), fetchTourAll('14'), fetchHeritageAll()]).then(([a, b, h]) => {
       const t = [...(a.status === 'fulfilled' ? a.value : []), ...(b.status === 'fulfilled' ? b.value : [])]
-      setTour(t)
+      setTour(t.filter((x) => !HALLA.test(x.title)))
+      setHallaImage(t.find((x) => x.title === '한라산 영실')?.image ?? '')
       // 이름이 그냥 '돌하르방'인 45건은 어느 것인지 구분할 정보가 없어서 뺐어요
-      setHeritage(h.status === 'fulfilled' ? h.value.filter((x) => x.name !== '돌하르방') : [])
+      setHeritage(h.status === 'fulfilled' ? h.value.filter((x) => x.name !== '돌하르방' && !HALLA.test(x.name)) : [])
       if (!t.length && h.status !== 'fulfilled') setError('관광지·문화유산 정보를 불러오지 못했어요')
     }).finally(() => setLoading(false))
   }, [])
@@ -88,12 +93,13 @@ export default function Map3D() {
 
   // 지도에 올리는 핀: 관광지·문화유산을 같은 모양의 자료로 맞춰요
   const pins = useMemo(() => [
+    { ...HALLA_PIN, image: hallaImage },
     ...tour.map((t) => ({ id: `t-${t.id}`, kind: 'tour', cat: categorize('tour', t.title), title: t.title, sub: t.addr, image: t.image, srcId: t.id, lat: Number(t.lat), lng: Number(t.lng) })),
     ...heritage.map((h) => ({ id: `h-${h.name}-${h.lat}`, kind: 'heritage', cat: categorize('heritage', h.name), title: h.name, sub: `${h.kind} · ${h.city}`, srcId: h.name, lat: Number(h.lat), lng: Number(h.lng) })),
-  ], [tour, heritage])
+  ], [tour, heritage, hallaImage])
   const q = query.trim()
   const shown = useMemo(() => pins.filter((p) => !off.has(p.cat) && (!q || p.title.includes(q))), [pins, off, q])
-  const layers = useMemo(() => Object.keys(CATEGORIES).map((cat) => ({ cat, items: shown.filter((p) => p.cat === cat) })), [shown])
+  const layers = useMemo(() => Object.keys(CATEGORIES).map((cat) => ({ cat, items: shown.filter((p) => p.cat === cat && !p.terrain) })), [shown])
   const byId = useMemo(() => new Map(pins.map((p) => [p.id, p])), [pins])
   const sel = selected ? byId.get(selected) : null
   const hov = hover && hover !== selected ? byId.get(hover) : null
@@ -102,9 +108,10 @@ export default function Map3D() {
     const p = byId.get(id)
     if (!p) return
     setSelected(id); setPlace(p.lat < 33.37 ? '서귀포시' : '제주시')
-    setView(viewAt(p.lng, p.lat, 3.2))
+    setView(viewAt(p.lng, p.lat, p.terrain ? 9 : 3.2))
   }
   function goRegion(r) {
+    if (r.name === '한라산') { pick('hallasan'); return }
     setSelected(null); setPlace(r.lat < 33.37 ? '서귀포시' : '제주시')
     setView(viewAt(r.lng, r.lat, r.name === '한라산' ? 9 : 6.5))
   }
@@ -128,7 +135,7 @@ export default function Map3D() {
               {gl ? (
                 <Boundary fallback={<Fallback />}>
                   <Suspense fallback={<Loading text="3D 지도를 그리는 중..." />}>
-                    <Jeju3DMap layers={layers} regions={REGIONS} hoverPin={hov} selectedPin={sel} onHover={setHover} onSelect={pick} view={view} mode={mode} />
+                    <Jeju3DMap layers={layers} regions={REGIONS} hoverPin={hov} selectedPin={sel} onHover={setHover} onSelect={pick} onTerrain={() => pick('hallasan')} view={view} mode={mode} />
                   </Suspense>
                 </Boundary>
               ) : <Fallback />}
@@ -170,6 +177,7 @@ export default function Map3D() {
                 <h3 className="serif" style={{ fontSize: '1.35rem' }}>{sel.title}</h3>
                 {sel.image && <img className="m3d-photo" src={sel.image.replace('http://', 'https://')} alt={sel.title} loading="lazy" />}
                 <div className="small text-muted mb-2">{sel.sub}</div>
+                {sel.desc && <p className="small mb-2">{sel.desc}</p>}
                 <div className="d-flex gap-3">
                   <button type="button" className="link-underline" onClick={() => addFavorite({ source: sel.kind === 'tour' ? 'tour' : 'heritage', id: sel.srcId, title: sel.title, image: sel.image })}>내 수첩에 담기</button>
                   <button type="button" className="link-underline" onClick={() => setSelected(null)}>닫기</button>

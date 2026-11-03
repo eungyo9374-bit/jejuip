@@ -70,7 +70,14 @@ const skyShader = {
 }
 
 // ── 땅·바다·해안선 ──
-function Land({ fx }) {
+// 한라산 지형인지: 해발 약 950m 이상이고 백록담에서 가까운 곳
+const SUMMIT = [126.5292, 33.3617]
+const onHallasan = (e) => {
+  const [lng, lat] = fromXZ(e.point.x, e.point.z)
+  return heightAt(lng, lat) >= 0.95 && Math.hypot((lng - SUMMIT[0]) * 0.83, lat - SUMMIT[1]) < 0.12
+}
+
+function Land({ fx, onTerrain }) {
   const geo = useMemo(() => buildTerrain(), [])
   const paper = useMemo(() => paperTexture(), [])
   const mat = useMemo(() => terrainMaterial(fx, paper), [fx, paper])
@@ -82,7 +89,10 @@ function Land({ fx }) {
   return (
     <>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, SEABED_Y, 0]}><planeGeometry args={[260, 200]} /><meshStandardMaterial color={DEEP_SEA} map={floor} roughness={0.95} /></mesh>
-      <mesh geometry={geo} material={mat} castShadow receiveShadow />
+      <mesh geometry={geo} material={mat} castShadow receiveShadow
+        onClick={(e) => { if (onHallasan(e)) { e.stopPropagation(); onTerrain() } }}
+        onPointerMove={(e) => { e.stopPropagation(); document.body.style.cursor = onHallasan(e) ? 'pointer' : '' }}
+        onPointerOut={() => { document.body.style.cursor = '' }} />
       <mesh rotation={[-Math.PI / 2, 0, 0]} renderOrder={1}>
         <planeGeometry args={[260, 200]} />
         <meshBasicMaterial ref={(m) => { fx.water = m }} transparent opacity={0.62} depthWrite={false} />
@@ -141,15 +151,16 @@ function Focus({ pin, selected }) {
   })
   if (!pin) return null
   const [x, z] = toXZ(pin.lng, pin.lat), y = heightAt(pin.lng, pin.lat), color = CATEGORIES[pin.cat].color
+  const peak = !!pin.terrain
   return (
     <group position={[x, y, z]}>
-      <mesh geometry={pinGeometry(pin.cat)} material={PIN_MAT} scale={PIN_SCALE * 1.5} castShadow />
+      {!peak && <mesh geometry={pinGeometry(pin.cat)} material={PIN_MAT} scale={PIN_SCALE * 1.5} castShadow />}
       {selected && (
-        <mesh ref={ring} position={[0, 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <mesh ref={ring} position={[0, 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]} scale={peak ? 3 : 1}>
           <ringGeometry args={[0.28, 0.34, 32]} /><meshBasicMaterial color={color} transparent depthWrite={false} />
         </mesh>
       )}
-      <Tag text={pin.title} kind="label" position={[0, 0.85, 0]} />
+      <Tag text={pin.title} kind="label" position={[0, peak ? 0.45 : 0.85, 0]} />
     </group>
   )
 }
@@ -351,7 +362,7 @@ function makeFx(mode) {
   }
 }
 
-function Scene({ layers, regions, hoverPin, selectedPin, onHover, onSelect, view, mode }) {
+function Scene({ layers, regions, hoverPin, selectedPin, onHover, onSelect, onTerrain, view, mode }) {
   const [fx] = useState(() => makeFx(mode))
   useEffect(() => { fx.mode = MODES[mode] ? mode : 'clear' }, [fx, mode])
   const sky = useRef(), sun = useRef(), hemi = useRef(), skyMesh = useRef()
@@ -373,7 +384,7 @@ function Scene({ layers, regions, hoverPin, selectedPin, onHover, onSelect, view
         shadow-mapSize={[SMALL ? 1024 : 2048, SMALL ? 1024 : 2048]} shadow-bias={-0.0004} shadow-normalBias={0.03}
         shadow-camera-left={-17} shadow-camera-right={17} shadow-camera-top={13} shadow-camera-bottom={-13} shadow-camera-near={1} shadow-camera-far={45} />
       <Atmosphere fx={fx} sky={sky} sun={sun} hemi={hemi} />
-      <Land fx={fx} />
+      <Land fx={fx} onTerrain={onTerrain} />
       <Regions regions={regions} />
       {layers.map((l) => <PinLayer key={l.cat} cat={l.cat} items={l.items} onHover={onHover} onSelect={onSelect} />)}
       <Focus pin={selectedPin ?? hoverPin} selected={!!selectedPin} />

@@ -7,10 +7,10 @@ import { ErrorAlert, Loading } from '../components/Status'
 import Jeju3DMap, { homeView } from '../components/Jeju3DMap'
 import { fetchHeritageAll, fetchTourAll, fetchWeather } from '../api/client'
 import { heightAt, toXZ } from '../lib/terrain'
+import { CATEGORIES, categorize } from '../lib/pinModels'
 import { useAppStore } from '../store/useAppStore'
 
 const PREVIEWS = [['auto', '오늘 날씨'], ['clear', '맑음'], ['cloudy', '흐림'], ['rain', '비'], ['snow', '눈']]
-const KIND = { tour: { label: '관광지', color: '#f2a93b' }, heritage: { label: '문화유산', color: '#7b5ea7' } }
 // 지역 이름과 위치 (지도에 글자로 보이고, 누르면 그쪽으로 날아가요)
 const REGIONS = [
   { name: '제주시', lng: 126.53, lat: 33.5 }, { name: '조천', lng: 126.65, lat: 33.52 }, { name: '구좌', lng: 126.8, lat: 33.52 },
@@ -61,7 +61,7 @@ export default function Map3D() {
   const [heritage, setHeritage] = useState([])
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
-  const [on, setOn] = useState({ tour: true, heritage: true })
+  const [off, setOff] = useState(() => new Set())     // 꺼 둔 종류
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState(null)        // 선택한 핀 id
   const [hover, setHover] = useState(null)
@@ -87,12 +87,12 @@ export default function Map3D() {
 
   // 지도에 올리는 핀: 관광지·문화유산을 같은 모양의 자료로 맞춰요
   const pins = useMemo(() => [
-    ...tour.map((t) => ({ id: `t-${t.id}`, kind: 'tour', title: t.title, sub: t.addr, image: t.image, srcId: t.id, lat: Number(t.lat), lng: Number(t.lng) })),
-    ...heritage.map((h) => ({ id: `h-${h.name}`, kind: 'heritage', title: h.name, sub: `${h.kind} · ${h.city}`, srcId: h.name, lat: Number(h.lat), lng: Number(h.lng) })),
+    ...tour.map((t) => ({ id: `t-${t.id}`, kind: 'tour', cat: categorize('tour', t.title), title: t.title, sub: t.addr, image: t.image, srcId: t.id, lat: Number(t.lat), lng: Number(t.lng) })),
+    ...heritage.map((h) => ({ id: `h-${h.name}-${h.lat}`, kind: 'heritage', cat: categorize('heritage', h.name), title: h.name, sub: `${h.kind} · ${h.city}`, srcId: h.name, lat: Number(h.lat), lng: Number(h.lng) })),
   ], [tour, heritage])
   const q = query.trim()
-  const shown = useMemo(() => pins.filter((p) => on[p.kind] && (!q || p.title.includes(q))), [pins, on, q])
-  const layers = useMemo(() => ['tour', 'heritage'].map((kind) => ({ kind, items: shown.filter((p) => p.kind === kind) })), [shown])
+  const shown = useMemo(() => pins.filter((p) => !off.has(p.cat) && (!q || p.title.includes(q))), [pins, off, q])
+  const layers = useMemo(() => Object.keys(CATEGORIES).map((cat) => ({ cat, items: shown.filter((p) => p.cat === cat) })), [shown])
   const byId = useMemo(() => new Map(pins.map((p) => [p.id, p])), [pins])
   const sel = selected ? byId.get(selected) : null
   const hov = hover && hover !== selected ? byId.get(hover) : null
@@ -112,7 +112,9 @@ export default function Map3D() {
   const slots = weather[place]
   const slot = slots?.[0]
   const mode = preview === 'auto' ? weatherMode(slot) : preview
-  const count = (k) => pins.filter((p) => p.kind === k).length
+  const counts = useMemo(() => { const c = {}; pins.forEach((p) => { c[p.cat] = (c[p.cat] ?? 0) + 1 }); return c }, [pins])
+  const toggle = (cat) => setOff((o) => { const n = new Set(o); if (n.has(cat)) n.delete(cat); else n.add(cat); return n })
+  const cats = Object.keys(CATEGORIES).filter((c) => counts[c])
 
   return (
     <>
@@ -145,13 +147,17 @@ export default function Map3D() {
             <p className="photo-credit mb-0">고도 자료: AWS Open Data Terrain Tiles (Mapzen · SRTM 등, 약 0.28km 간격) · 높이는 실제보다 약 3.7배 과장했어요 · 해안선 © OpenStreetMap contributors · 관광지는 한국관광공사, 문화유산은 국가유산청, 날씨는 기상청 (비·눈·구름 효과는 분위기 연출이에요) · 추자도는 3D에서 뺐어요</p>
           </Col>
           <Col lg={3}>
-            <div className="eyebrow">제주 관광지·문화유산</div>
-            <div className="map-chips mb-2">
-              {Object.entries(KIND).map(([k, v]) => (
-                <button key={k} type="button" className={`chip ${on[k] ? 'on' : ''}`} onClick={() => setOn((o) => ({ ...o, [k]: !o[k] }))}>
-                  <span className="m3d-dot" style={{ background: v.color }} />{v.label} {count(k)}
+            <div className="eyebrow">종류별로 보기</div>
+            <div className="map-chips mb-1 m3d-cats">
+              {cats.map((c) => (
+                <button key={c} type="button" className={`chip ${off.has(c) ? '' : 'on'}`} onClick={() => toggle(c)} title={`${CATEGORIES[c].label} ${counts[c]}곳`}>
+                  <span className="m3d-dot" style={{ background: CATEGORIES[c].color }} />{CATEGORIES[c].label} {counts[c]}
                 </button>
               ))}
+            </div>
+            <div className="d-flex gap-3 mb-2 small">
+              <button type="button" className="link-underline" onClick={() => setOff(new Set())}>모두 보기</button>
+              <button type="button" className="link-underline" onClick={() => setOff(new Set(cats))}>모두 끄기</button>
             </div>
             <input type="search" className="form-control form-control-sm mb-2" placeholder="이름으로 찾기 (예: 오름, 성산, 관덕정)" value={query} onChange={(e) => setQuery(e.target.value)} />
             <div className="map-chips mb-3">
@@ -159,7 +165,7 @@ export default function Map3D() {
             </div>
             {sel ? (
               <article className="map-panel mb-3">
-                <div className="eyebrow"><span className="m3d-dot" style={{ background: KIND[sel.kind].color }} />{KIND[sel.kind].label}</div>
+                <div className="eyebrow"><span className="m3d-dot" style={{ background: CATEGORIES[sel.cat].color }} />{CATEGORIES[sel.cat].label} · {sel.kind === 'heritage' ? '문화유산' : '관광지'}</div>
                 <h3 className="serif" style={{ fontSize: '1.35rem' }}>{sel.title}</h3>
                 {sel.image && <img className="m3d-photo" src={sel.image.replace('http://', 'https://')} alt={sel.title} loading="lazy" />}
                 <div className="small text-muted mb-2">{sel.sub}</div>
@@ -171,12 +177,12 @@ export default function Map3D() {
             ) : (
               <p className="small text-muted">핀을 누르거나 아래 목록에서 고르면 그곳으로 날아가요. 지역 이름을 누르면 그 동네를 둘러볼 수 있어요.</p>
             )}
-            <div className="small text-muted mb-1">{q || !(on.tour && on.heritage) ? `${shown.length}곳` : `전체 ${shown.length}곳`}</div>
+            <div className="small text-muted mb-1">{q || off.size ? `${shown.length}곳` : `전체 ${shown.length}곳`}</div>
             <ul className="m3d-pins">
               {shown.slice(0, 60).map((p) => (
                 <li key={p.id}>
                   <button type="button" className={selected === p.id ? 'on' : ''} onClick={() => pick(p.id)} onMouseEnter={() => setHover(p.id)} onMouseLeave={() => setHover(null)}>
-                    <span className="m3d-dot" style={{ background: KIND[p.kind].color }} />{p.title}
+                    <span className="m3d-dot" style={{ background: CATEGORIES[p.cat].color }} />{p.title}
                   </button>
                 </li>
               ))}

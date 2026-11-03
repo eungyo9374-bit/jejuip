@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Line, OrbitControls } from '@react-three/drei'
 import * as THREE from 'three'
+import { CATEGORIES, PIN_SCALE, pinGeometry } from '../lib/pinModels'
 import { DEEP_SEA, LAND_RINGS, SEABED_Y, buildTerrain, fromXZ, heightAt, paperTexture, puffTexture, terrainMaterial, toXZ, waveTexture } from '../lib/terrain'
 
 const SMALL = typeof window !== 'undefined' && window.innerWidth < 700   // 휴대폰이면 입자·그림자를 줄여요
@@ -104,42 +105,32 @@ function Regions({ regions }) {
   })
 }
 
-// ── 명소·문화유산 핀: 한 종류를 한 번에 그려요 (수백 개여도 가벼워요) ──
-const PIN = { tour: { color: '#f2a93b', head: 0.075 }, heritage: { color: '#7b5ea7', head: 0.085 } }
-function PinLayer({ items, kind, onHover, onSelect }) {
-  const heads = useRef(), sticks = useRef()
+// ── 명소·문화유산 핀: 종류마다 그 장소를 닮은 작은 모형(배·파라솔·탑 등)을 세워요 ──
+const PIN_MAT = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.65 })
+function PinLayer({ items, cat, onHover, onSelect }) {
+  const ref = useRef()
   const n = items.length
+  const geo = useMemo(() => pinGeometry(cat), [cat])
   useEffect(() => {
-    if (!heads.current) return
-    const m = new THREE.Matrix4(), q = new THREE.Quaternion(), one = new THREE.Vector3(1, 1, 1), p = new THREE.Vector3()
+    if (!ref.current) return
+    const m = new THREE.Matrix4(), q = new THREE.Quaternion(), s = new THREE.Vector3(PIN_SCALE, PIN_SCALE, PIN_SCALE), p = new THREE.Vector3()
     items.forEach((it, i) => {
-      const [x, z] = toXZ(it.lng, it.lat), y = heightAt(it.lng, it.lat)
-      heads.current.setMatrixAt(i, m.compose(p.set(x, y + 0.3, z), q, one))
-      sticks.current.setMatrixAt(i, m.compose(p.set(x, y + 0.14, z), q, one))
+      const [x, z] = toXZ(it.lng, it.lat)
+      ref.current.setMatrixAt(i, m.compose(p.set(x, heightAt(it.lng, it.lat), z), q, s))
     })
-    heads.current.instanceMatrix.needsUpdate = true
-    sticks.current.instanceMatrix.needsUpdate = true
-    heads.current.computeBoundingSphere(); heads.current.computeBoundingBox()
+    ref.current.instanceMatrix.needsUpdate = true
+    ref.current.computeBoundingSphere()
   }, [items])
   if (!n) return null
-  const c = PIN[kind]
   return (
-    <group key={kind + n}>
-      <instancedMesh ref={sticks} args={[null, null, n]} frustumCulled={false}>
-        <cylinderGeometry args={[0.008, 0.008, 0.28, 5]} /><meshStandardMaterial color="#4a4743" />
-      </instancedMesh>
-      <instancedMesh ref={heads} args={[null, null, n]} frustumCulled={false} castShadow
-        onPointerMove={(e) => { e.stopPropagation(); onHover(items[e.instanceId]?.id ?? null) }}
-        onPointerOut={() => onHover(null)}
-        onClick={(e) => { e.stopPropagation(); const it = items[e.instanceId]; if (it) onSelect(it.id) }}>
-        {kind === 'heritage' ? <octahedronGeometry args={[c.head]} /> : <sphereGeometry args={[c.head, 14, 10]} />}
-        <meshStandardMaterial color={c.color} roughness={0.5} />
-      </instancedMesh>
-    </group>
+    <instancedMesh key={cat + n} ref={ref} args={[geo, PIN_MAT, n]} frustumCulled={false} castShadow
+      onPointerMove={(e) => { e.stopPropagation(); onHover(items[e.instanceId]?.id ?? null) }}
+      onPointerOut={() => onHover(null)}
+      onClick={(e) => { e.stopPropagation(); const it = items[e.instanceId]; if (it) onSelect(it.id) }} />
   )
 }
 
-// 선택·가리킨 핀: 크게 강조하고 이름표를 붙여요 (선택한 핀에는 물결이 퍼져요)
+// 선택·가리킨 핀: 크게 키워 보여 주고 이름표를 붙여요 (선택한 핀에는 물결이 퍼져요)
 function Focus({ pin, selected }) {
   const ring = useRef()
   useFrame(({ clock }) => {
@@ -149,20 +140,16 @@ function Focus({ pin, selected }) {
     ring.current.material.opacity = (1 - t) * 0.8
   })
   if (!pin) return null
-  const [x, z] = toXZ(pin.lng, pin.lat), y = heightAt(pin.lng, pin.lat)
-  const heritage = pin.kind === 'heritage'
+  const [x, z] = toXZ(pin.lng, pin.lat), y = heightAt(pin.lng, pin.lat), color = CATEGORIES[pin.cat].color
   return (
     <group position={[x, y, z]}>
-      <mesh position={[0, 0.3, 0]} scale={1.8} renderOrder={5}>
-        {heritage ? <octahedronGeometry args={[0.085]} /> : <sphereGeometry args={[0.075, 16, 12]} />}
-        <meshStandardMaterial color={PIN[pin.kind].color} emissive={PIN[pin.kind].color} emissiveIntensity={0.5} />
-      </mesh>
+      <mesh geometry={pinGeometry(pin.cat)} material={PIN_MAT} scale={PIN_SCALE * 1.5} castShadow />
       {selected && (
         <mesh ref={ring} position={[0, 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-          <ringGeometry args={[0.2, 0.25, 32]} /><meshBasicMaterial color={PIN[pin.kind].color} transparent depthWrite={false} />
+          <ringGeometry args={[0.28, 0.34, 32]} /><meshBasicMaterial color={color} transparent depthWrite={false} />
         </mesh>
       )}
-      <Tag text={pin.title} kind="label" position={[0, 0.72, 0]} />
+      <Tag text={pin.title} kind="label" position={[0, 0.85, 0]} />
     </group>
   )
 }
@@ -388,7 +375,7 @@ function Scene({ layers, regions, hoverPin, selectedPin, onHover, onSelect, view
       <Atmosphere fx={fx} sky={sky} sun={sun} hemi={hemi} />
       <Land fx={fx} />
       <Regions regions={regions} />
-      {layers.map((l) => <PinLayer key={l.kind} kind={l.kind} items={l.items} onHover={onHover} onSelect={onSelect} />)}
+      {layers.map((l) => <PinLayer key={l.cat} cat={l.cat} items={l.items} onHover={onHover} onSelect={onSelect} />)}
       <Focus pin={selectedPin ?? hoverPin} selected={!!selectedPin} />
       <Clouds fx={fx} />
       <Rain fx={fx} on={mode === 'rain'} />

@@ -92,7 +92,11 @@ export default function Map3D() {
     const xs = xz.map((p) => p[0]), zs = xz.map((p) => p[1])
     const cx = (Math.min(...xs) + Math.max(...xs)) / 2, cz = (Math.min(...zs) + Math.max(...zs)) / 2
     const size = Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...zs) - Math.min(...zs), 2.5)
-    setView({ look: new THREE.Vector3(cx, 0.2, cz), pos: new THREE.Vector3(cx, 0.75 * size + 2, cz + 0.95 * size + 2.5) })
+    // 바다 쪽에서 낮게 섬 안쪽(한라산 방향)을 바라보는 시점
+    const len = Math.hypot(cx, cz)
+    const [ox, oz] = len > 1.5 ? [cx / len, cz / len] : [0, 1]
+    const d = 0.85 * size + 2.4
+    setView({ look: new THREE.Vector3(cx, 0.15, cz), pos: new THREE.Vector3(cx + ox * d, 0.42 * d + 0.5, cz + oz * d) })
     fetchNearby(g.c.lat, g.c.lng).then(setTour).catch(() => setTour([]))
     fetchHeritageNear(g.c.lat, g.c.lng).then(setHeritage).catch(() => setHeritage([]))
     if (!weather[g.c.weatherPlace]) fetchWeather(g.c.weatherPlace).then((w) => setWeather((o) => ({ ...o, [g.c.weatherPlace]: w }))).catch(() => {})
@@ -133,7 +137,7 @@ export default function Map3D() {
                   : '미리보기 중이에요 (실제 날씨가 아니에요)'}
               </span>
             </div>
-            <p className="photo-credit mb-0">고도 자료: Open-Meteo (Copernicus DEM, 약 1.2km 간격) · 높이는 실제보다 약 3.7배 과장했어요 · 해안선·경로 © OpenStreetMap contributors · 코스 선은 일부만 실제 올레길이고 나머지는 대략적인 선이에요 · 추자도 코스는 3D에서 뺐어요 · 명소는 한국관광공사, 문화유산은 국가유산청, 날씨는 기상청</p>
+            <p className="photo-credit mb-0">고도 자료: AWS Open Data Terrain Tiles (Mapzen · SRTM 등, 약 0.28km 간격) · 높이는 실제보다 약 3.7배 과장했어요 · 해안선·경로 © OpenStreetMap contributors · 코스 선은 일부만 실제 올레길이고 나머지는 대략적인 선이에요 · 추자도 코스는 3D에서 뺐어요 · 명소는 한국관광공사, 문화유산은 국가유산청, 날씨는 기상청</p>
           </Col>
           <Col lg={3}>
             {sel ? (

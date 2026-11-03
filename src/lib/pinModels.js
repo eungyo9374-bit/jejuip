@@ -15,7 +15,7 @@ export const CATEGORIES = {
   geology: { label: '지질·생태', color: '#8d7fb3' },
   temple: { label: '사찰·종교', color: '#c0614a' },
   castle: { label: '성곽·연대', color: '#8c7b6a' },
-  statue: { label: '돌하르방·석상', color: '#75736c' },
+  statue: { label: '석상·미륵', color: '#75736c' },
   bangsatap: { label: '방사탑', color: '#7d7466' },
   dolmen: { label: '고인돌·유적', color: '#9a8f7a' },
   house: { label: '초가·민속', color: '#b5833f' },

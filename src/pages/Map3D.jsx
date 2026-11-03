@@ -76,7 +76,8 @@ export default function Map3D() {
     Promise.allSettled([fetchTourAll('12'), fetchTourAll('14'), fetchHeritageAll()]).then(([a, b, h]) => {
       const t = [...(a.status === 'fulfilled' ? a.value : []), ...(b.status === 'fulfilled' ? b.value : [])]
       setTour(t)
-      setHeritage(h.status === 'fulfilled' ? h.value : [])
+      // 이름이 그냥 '돌하르방'인 45건은 어느 것인지 구분할 정보가 없어서 뺐어요
+      setHeritage(h.status === 'fulfilled' ? h.value.filter((x) => x.name !== '돌하르방') : [])
       if (!t.length && h.status !== 'fulfilled') setError('관광지·문화유산 정보를 불러오지 못했어요')
     }).finally(() => setLoading(false))
   }, [])
